@@ -1,0 +1,44 @@
+name: "Copilot Setup Steps"
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24.5"
+          cache: true
+
+      - name: 缓存依赖
+        id: cache
+        uses: actions/cache@v4
+        with:
+          # 要缓存的路径，可以指定多个路径
+          path: |
+            ~/.go
+          # 缓存的唯一键，当go.mod变化时生成不同的缓存
+          key: go-cache-${{ runner.os }}-${{ hashFiles('go.mod') }}
+          # 回退键，当精确键未命中时，会尝试使用这些键查找缓存
+          # 这里按操作系统回退，找到最近的缓存
+          restore-keys: |
+            go-cache-${{ runner.os }}-
+
+      - name: Install Go dependencies
+        run: go mod tidy
