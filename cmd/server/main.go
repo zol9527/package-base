@@ -40,6 +40,7 @@ func NewApplication() (*Application, error) {
 		// 如果配置文件不存在，使用默认配置
 		if os.IsNotExist(err) {
 			fmt.Printf("Config file not found")
+			cfg = config.DefaultConfig() // 假设你有一个 DefaultConfig() 方法返回默认配置
 
 			// 验证配置
 			if err := cfg.Validate(); err != nil {
