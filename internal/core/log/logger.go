@@ -26,8 +26,8 @@ var (
 // #2 公开的数据结构
 // ============================================================================
 
-// Config 日志配置
-type Config struct {
+// LoggerConfig 日志配置
+type LoggerConfig struct {
 	// 基础配置
 	Level  string // 日志级别: debug, info, warn, error, fatal
 	Format string // 输出格式: json, console
@@ -57,8 +57,8 @@ type Config struct {
 // ============================================================================
 
 // DefaultConfig 返回默认配置
-func DefaultConfig() *Config {
-	return &Config{
+func DefaultConfig() *LoggerConfig {
+	return &LoggerConfig{
 		Level:            "info",
 		Format:           "console",
 		EnableFile:       false,
@@ -78,7 +78,7 @@ func DefaultConfig() *Config {
 }
 
 // Initialize 初始化全局日志器
-func Initialize(config *Config) error {
+func Initialize(config *LoggerConfig) error {
 	var err error
 	once.Do(func() {
 		globalLogger, err = NewLogger(config)
@@ -96,7 +96,7 @@ func L() interfaces.Logger {
 }
 
 // NewLogger 创建新的日志器实例
-func NewLogger(config *Config) (interfaces.Logger, error) {
+func NewLogger(config *LoggerConfig) (interfaces.Logger, error) {
 	if config == nil {
 		config = DefaultConfig()
 	}
@@ -204,7 +204,7 @@ func (l *ZapLogger) Sync() error {
 // ============================================================================
 
 // newZapLogger 创建zap日志器
-func newZapLogger(cfg *Config) (*zap.Logger, error) {
+func newZapLogger(cfg *LoggerConfig) (*zap.Logger, error) {
 	// 1. 设置日志级别
 	var level zapcore.Level
 	if err := level.UnmarshalText([]byte(cfg.Level)); err != nil {
