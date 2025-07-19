@@ -5,7 +5,6 @@ import (
 
 	"package-base/internal/core/config"
 	"package-base/internal/core/interfaces"
-	"package-base/internal/core/log"
 	"package-base/internal/core/storages"
 	"package-base/internal/core/utils"
 	"package-base/internal/handlers"
@@ -55,18 +54,15 @@ type Container struct {
 }
 
 // NewContainer 创建依赖注入容器
-func NewContainer(cfg *config.Config) *Container {
+func NewContainer(cfg *config.Config, logger interfaces.Logger) *Container {
 	return &Container{
 		config: cfg,
+		logger: logger,
 	}
 }
 
 // Initialize 初始化容器
 func (c *Container) Initialize(ctx context.Context) error {
-	// 1. 初始化日志
-	if err := c.initLogger(); err != nil {
-		return errors.Wrap(err, "failed to initialize logger")
-	}
 
 	// 2. 初始化存储
 	if err := c.initStorages(ctx); err != nil {
@@ -99,33 +95,6 @@ func (c *Container) Initialize(ctx context.Context) error {
 	}
 
 	c.logger.Info("container initialized successfully")
-	return nil
-}
-
-// initLogger 初始化日志
-func (c *Container) initLogger() error {
-	// 创建兼容的日志配置
-	logConfig := &log.Config{
-		Level:            c.config.Logger.Level,
-		Format:           c.config.Logger.Format,
-		EnableFile:       c.config.Logger.EnableFile,
-		FilePath:         c.config.Logger.FilePath,
-		MaxSize:          c.config.Logger.MaxSize,
-		MaxBackups:       c.config.Logger.MaxBackups,
-		MaxAge:           c.config.Logger.MaxAge,
-		Compress:         c.config.Logger.Compress,
-		LocalTime:        c.config.Logger.LocalTime,
-		EnableConsole:    c.config.Logger.EnableConsole,
-		ColorOutput:      c.config.Logger.ColorOutput,
-		EnableCaller:     c.config.Logger.EnableCaller,
-		EnableStacktrace: c.config.Logger.EnableStacktrace,
-	}
-
-	logger, err := log.NewLogger(logConfig)
-	if err != nil {
-		return err
-	}
-	c.logger = logger
 	return nil
 }
 
