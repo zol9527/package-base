@@ -2,11 +2,11 @@ package routes
 
 import (
 	"package-base/internal/container"
+	"package-base/internal/core/log"
 	"package-base/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
@@ -46,9 +46,12 @@ func (r *Routes) setupMiddlewares() {
 	r.app.Use(requestid.New())
 
 	// 日志中间件
-	r.app.Use(logger.New(logger.Config{
-		Format: "[${time}] ${status} - ${method} ${path} - ${latency}\n",
-	}))
+	logger := log.L() // 日志处理器已经在前面初始化，现在直接使用 L() 获取
+	middlewareLogger := middleware.NewLogger(logger)
+	r.app.Use(middlewareLogger.Handler())
+
+	// 设置 security headers
+	r.app.Use(middleware.SecurityHeaders())
 
 	// CORS中间件
 	r.app.Use(cors.New(cors.Config{

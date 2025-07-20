@@ -121,11 +121,18 @@ func (m *LoggerMiddleware) Recovery() fiber.Handler {
 func SecurityHeaders() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// 设置安全头
+		// 防止 MIME 类型嗅探
 		c.Set("X-Content-Type-Options", "nosniff")
+		// 防止页面被嵌入到 iframe，防止点击劫持
 		c.Set("X-Frame-Options", "DENY")
+		// 启用 XSS 保护
 		c.Set("X-XSS-Protection", "1; mode=block")
+		// 限制 Referrer 信息的发送范围，保护隐私
 		c.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		// 限制资源加载来源，防止 XSS 攻击，如果有 oss 域名则直接添加到里面
+		// c.Set("Content-Security-Policy", "default-src 'self' https://your-oss-domain.com")
 		c.Set("Content-Security-Policy", "default-src 'self'")
+		// 强制使用 HTTPS，防止中间人攻击
 		c.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
 		return c.Next()
