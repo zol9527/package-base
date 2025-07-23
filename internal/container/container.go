@@ -31,23 +31,15 @@ type Container struct {
 	validator  *utils.Validator
 
 	// 存储层
-	userRepo           repoInterfaces.UserRepository
 	sessionRepo        repoInterfaces.SessionRepository
 	tokenBlacklistRepo repoInterfaces.TokenBlacklistRepository
 	loginAttemptRepo   repoInterfaces.LoginAttemptRepository
-	totpSecretRepo     repoInterfaces.TotpSecretRepository
-	backupCodeRepo     repoInterfaces.BackupCodeRepository
 
 	// 服务层
-	authService     serviceInterfaces.AuthService
-	userService     serviceInterfaces.UserService
 	securityService serviceInterfaces.SecurityService
-	totpService     serviceInterfaces.TotpService
 
 	// 处理器层
-	authHandler *handlers.AuthHandler
-	userHandler *handlers.UserHandler
-	totpHandler *handlers.TotpHandler
+	logtoAuthHandler *handlers.LogtoAuthHandler
 
 	// 中间件
 	authMiddleware *middleware.AuthMiddleware
@@ -145,9 +137,6 @@ func (c *Container) initCoreComponents() error {
 
 // initRepositories 初始化存储层
 func (c *Container) initRepositories() error {
-	// 初始化用户仓库
-	c.userRepo = repositories.NewUserRepository(c.mysqlStorage, c.logger)
-
 	// 初始化会话仓库
 	c.sessionRepo = repositories.NewSessionRepository(c.mysqlStorage, c.logger)
 
@@ -157,33 +146,11 @@ func (c *Container) initRepositories() error {
 	// 初始化登录尝试仓库
 	c.loginAttemptRepo = repositories.NewLoginAttemptRepository(c.mysqlStorage, c.logger)
 
-	// 初始化TOTP密钥仓库
-	c.totpSecretRepo = repositories.NewTotpSecretRepository(c.mysqlStorage, c.logger)
-
-	// 初始化备用码仓库
-	c.backupCodeRepo = repositories.NewBackupCodeRepository(c.mysqlStorage, c.logger)
-
 	return nil
 }
 
 // initServices 初始化服务层
 func (c *Container) initServices() error {
-	// 初始化认证服务
-	c.authService = services.NewAuthService(
-		c.userRepo,
-		c.sessionRepo,
-		c.tokenBlacklistRepo,
-		c.config.JWT.Secret,
-		c.config.JWT.GetAccessTokenExpire(),
-		c.config.JWT.GetRefreshTokenExpire(),
-		c.logger,
-	)
-
-	// 初始化用户服务
-	c.userService = services.NewUserService(
-		c.userRepo,
-		c.logger,
-	)
 
 	// 初始化安全服务
 	c.securityService = services.NewSecurityService(
@@ -193,35 +160,11 @@ func (c *Container) initServices() error {
 		nil, // 使用默认选项
 	)
 
-	// 初始化TOTP服务
-	c.totpService = services.NewTotpService(
-		c.totpSecretRepo,
-		c.backupCodeRepo,
-		c.logger,
-	)
-
 	return nil
 }
 
 // initHandlers 初始化处理器层
 func (c *Container) initHandlers() error {
-	// 初始化认证处理器
-	c.authHandler = handlers.NewAuthHandler(
-		c.authService,
-		c.logger,
-	)
-
-	// 初始化用户处理器
-	c.userHandler = handlers.NewUserHandler(
-		c.userService,
-		c.logger,
-	)
-
-	// 初始化TOTP处理器
-	c.totpHandler = handlers.NewTotpHandler(
-		c.totpService,
-		c.logger,
-	)
 
 	return nil
 }
@@ -293,11 +236,6 @@ func (c *Container) GetValidator() *utils.Validator {
 	return c.validator
 }
 
-// GetUserRepository 获取用户仓库
-func (c *Container) GetUserRepository() repoInterfaces.UserRepository {
-	return c.userRepo
-}
-
 // GetSessionRepository 获取会话仓库
 func (c *Container) GetSessionRepository() repoInterfaces.SessionRepository {
 	return c.sessionRepo
@@ -313,34 +251,14 @@ func (c *Container) GetLoginAttemptRepository() repoInterfaces.LoginAttemptRepos
 	return c.loginAttemptRepo
 }
 
-// GetAuthService 获取认证服务
-func (c *Container) GetAuthService() serviceInterfaces.AuthService {
-	return c.authService
-}
-
-// GetUserService 获取用户服务
-func (c *Container) GetUserService() serviceInterfaces.UserService {
-	return c.userService
-}
-
 // GetSecurityService 获取安全服务
 func (c *Container) GetSecurityService() serviceInterfaces.SecurityService {
 	return c.securityService
 }
 
-// GetAuthHandler 获取认证处理器
-func (c *Container) GetAuthHandler() *handlers.AuthHandler {
-	return c.authHandler
-}
-
-// GetUserHandler 获取用户处理器
-func (c *Container) GetUserHandler() *handlers.UserHandler {
-	return c.userHandler
-}
-
-// GetTotpHandler 获取TOTP处理器
-func (c *Container) GetTotpHandler() *handlers.TotpHandler {
-	return c.totpHandler
+// --- Handlers ---
+func (c *Container) GetLogtoAuthHandler() *handlers.LogtoAuthHandler {
+	return c.logtoAuthHandler
 }
 
 // GetAuthMiddleware 获取认证中间件

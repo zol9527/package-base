@@ -53,6 +53,13 @@ func (r *Routes) setupMiddlewares() {
 	// 设置 security headers
 	r.app.Use(middleware.SecurityHeaders())
 
+	// logto Session 中间键
+	logtoSessionMiddleware, err := middleware.NewLogtoSessionMiddleware(r.container.GetConfig(), logger)
+	if err != nil {
+		logger.Fatal("Failed to create Logto session middleware")
+	}
+	r.app.Use(logtoSessionMiddleware.Handler())
+
 	// CORS中间件
 	r.app.Use(cors.New(cors.Config{
 		AllowOrigins:     "*",
@@ -68,55 +75,12 @@ func (r *Routes) setupAPIRoutes() {
 	// API v1 路由组
 	v1 := r.app.Group("/api/v1")
 
+	// Logto 身份认证
+	logtoAuthHandler := r.container.GetLogtoAuthHandler()
+
 	// 认证路由组
 	auth := v1.Group("/auth")
-	r.setupAuthRoutes(auth)
-
-	// 用户路由组
-	user := v1.Group("/user")
-	r.setupUserRoutes(user)
-
-	// 2FA路由组
-	twofa := v1.Group("/2fa")
-	r.setupTotpRoutes(twofa)
-}
-
-// setupAuthRoutes 设置认证路由
-func (r *Routes) setupAuthRoutes(group fiber.Router) {
-	authHandler := r.container.GetAuthHandler()
-
-	// 公开路由（无需认证）
-	group.Post("/register", authHandler.Register)
-	group.Post("/login", authHandler.Login)
-	group.Post("/refresh", authHandler.RefreshToken)
-
-	// 需要认证的路由
-	protected := group.Group("")
-	authMiddleware := middleware.NewAuthMiddleware(r.container.GetConfig().JWT.Secret, r.container.GetLogger())
-	protected.Use(authMiddleware.Authenticate())
-
-	protected.Post("/logout", authHandler.Logout)
-	protected.Post("/logout-all", authHandler.LogoutAll)
-	protected.Put("/change-password", authHandler.ChangePassword)
-	protected.Get("/profile", authHandler.GetProfile)
-	protected.Get("/sessions", authHandler.GetSessions)
-	protected.Get("/sessions/active", authHandler.GetActiveSessions)
-	protected.Get("/sessions/recent", authHandler.GetRecentSessions)
-	protected.Get("/sessions/stats", authHandler.GetSessionStats)
-	protected.Delete("/sessions/:sessionId", authHandler.DeleteSession)
-}
-
-// setupUserRoutes 设置用户路由
-func (r *Routes) setupUserRoutes(group fiber.Router) {
-	userHandler := r.container.GetUserHandler()
-
-	// 需要认证的路由
-	protected := group.Group("")
-	authMiddleware := middleware.NewAuthMiddleware(r.container.GetConfig().JWT.Secret, r.container.GetLogger())
-	protected.Use(authMiddleware.Authenticate())
-
-	protected.Get("/profile", userHandler.GetProfile)
-	protected.Put("/profile", userHandler.UpdateProfile)
+	logtoAuthHandler.RegisterLogtoAuthRoutes(auth)
 }
 
 // setupHealthRoutes 设置健康检查路由
@@ -143,24 +107,4 @@ func (r *Routes) setupHealthRoutes() {
 			"message": "pong",
 		})
 	})
-}
-
-// setupTotpRoutes 设置2FA TOTP路由
-func (r *Routes) setupTotpRoutes(group fiber.Router) {
-	totpHandler := r.container.GetTotpHandler()
-
-	// 需要认证的路由
-	protected := group.Group("")
-	authMiddleware := middleware.NewAuthMiddleware(r.container.GetConfig().JWT.Secret, r.container.GetLogger())
-	protected.Use(authMiddleware.Authenticate())
-
-	// 2FA管理接口
-	protected.Post("/setup", totpHandler.GenerateSecret)                    // 生成2FA设置信息
-	protected.Post("/enable", totpHandler.EnableTOTP)                       // 启用2FA
-	protected.Post("/disable", totpHandler.DisableTOTP)                     // 禁用2FA
-	protected.Post("/verify", totpHandler.VerifyTOTP)                       // 验证TOTP令牌
-	protected.Post("/backup-verify", totpHandler.VerifyBackupCode)          // 验证备用码
-	protected.Post("/regenerate-backup", totpHandler.RegenerateBackupCodes) // 重新生成备用码
-	protected.Get("/status", totpHandler.GetTOTPStatus)                     // 获取2FA状态
-	protected.Get("/backup-status", totpHandler.GetBackupCodeStatus)        // 获取备用码状态
 }
