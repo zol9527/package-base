@@ -15,6 +15,8 @@ type Config struct {
 	JWT      *JWTConfig      `json:"jwt" yaml:"jwt"`
 	Security *SecurityConfig `json:"security" yaml:"security"`
 	Logger   *LoggerConfig   `json:"logger" yaml:"logger"`
+	Logto    *LogtoConfig    `json:"logto" yaml:"logto"`
+	Session  *SessionConfig  `json:"session" yaml:"session"`
 }
 
 // AppConfig 应用配置
@@ -23,6 +25,7 @@ type AppConfig struct {
 	Version string `json:"version" yaml:"version"`
 	Mode    string `json:"mode" yaml:"mode"` // development, production, test
 	Debug   bool   `json:"debug" yaml:"debug"`
+	Domain  string `json:"domain" yaml:"domain"` // 应用域名
 }
 
 // ServerConfig 服务器配置
@@ -105,6 +108,10 @@ type LoggerConfig struct {
 	EnableStacktrace bool   `json:"enable_stacktrace" yaml:"enable_stacktrace"`
 }
 
+type SessionConfig struct {
+	Storage string `json:"storage" yaml:"storage"` // 存储类型，如 "memory", "redis"
+}
+
 // DefaultConfig 返回默认配置
 func DefaultConfig() *Config {
 	return &Config{
@@ -113,6 +120,7 @@ func DefaultConfig() *Config {
 			Version: "1.0.0",
 			Mode:    "development",
 			Debug:   true,
+			Domain:  "localhost", // 默认域名
 		},
 		Server: &ServerConfig{
 			Port:         8080,
@@ -122,6 +130,13 @@ func DefaultConfig() *Config {
 			IdleTimeout:  120,
 			BodyLimit:    "4MB",
 			Prefork:      false,
+		},
+		Logto: &LogtoConfig{
+			Enabled:     true,
+			Endpoint:    "https://api.logto.io",
+			Secret:      "your-api-key",
+			AppID:       "your-app-id",
+			CallbackURI: "http://localhost:8080/callback",
 		},
 		Database: &DatabaseConfig{
 			MySQL: &storages.MySQLConfig{
@@ -156,6 +171,9 @@ func DefaultConfig() *Config {
 				KeyPrefix:     "auth:",
 				DefaultTTL:    24 * time.Hour,
 			},
+		},
+		Session: &SessionConfig{
+			Storage: "redis",
 		},
 		JWT: &JWTConfig{
 			Secret:              "your-secret-key-change-in-production",
@@ -240,4 +258,45 @@ func (c *Config) Validate() error {
 // IsProduction 检查是否为生产环境
 func (c *Config) IsProduction() bool {
 	return c.App.Mode == "production"
+}
+
+type LogtoConfig struct {
+	Enabled     bool   `json:"enabled" yaml:"enabled"`
+	Endpoint    string `json:"endpoint" yaml:"endpoint"`
+	Secret      string `json:"api_key" yaml:"api_key"`
+	AppID       string `json:"app_id" yaml:"app_id"`
+	CallbackURI string `json:"redirect_uri" yaml:"redirect_uri"`
+}
+
+func (c *LogtoConfig) Validate() error {
+	if c.Endpoint == "" {
+		return fmt.Errorf("logto endpoint is required")
+	}
+	if c.Secret == "" {
+		return fmt.Errorf("logto api_key is required")
+	}
+	if c.AppID == "" {
+		return fmt.Errorf("logto app_id is required")
+	}
+	return nil
+}
+
+func (c *LogtoConfig) IsEnabled() bool {
+	return c.Enabled
+}
+
+func (c *LogtoConfig) GetEndpoint() string {
+	return c.Endpoint
+}
+
+func (c *LogtoConfig) GetSecret() string {
+	return c.Secret
+}
+
+func (c *LogtoConfig) GetAppID() string {
+	return c.AppID
+}
+
+func (c *LogtoConfig) GetCallbackURI() string {
+	return c.CallbackURI
 }
