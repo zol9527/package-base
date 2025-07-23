@@ -70,9 +70,12 @@ func (h *LogtoAuthHandler) LogtoLogout(c *fiber.Ctx) error {
 	}
 
 	// 获取当前会话 session 并销毁
-	sessionStore := c.Locals("session_store").(*session.Session)
-	currentSess := sessionStore.Get(c)
-	if err := currentSess.Destroy(); err != nil {
+	sessionStore, ok := c.Locals("session_store").(*session.Store)
+	if !ok {
+		h.logger.Error("Session store not found in context")
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.Error(500, "Failed to logout"))
+	}
+	if err := sessionStore.Destroy(); err != nil {
 		h.logger.Error("Failed to destroy session", interfaces.ErrorField(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(dto.Error(500, "Failed to logout, internal error occurred"))
 	}

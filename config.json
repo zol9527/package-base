@@ -3,7 +3,8 @@
     "name": "package-base",
     "version": "1.0.0",
     "mode": "development",
-    "debug": true
+    "debug": true,
+    "domain": "localhost"
   },
   "server": {
     "port": 8080,
@@ -83,6 +84,7 @@
     "enable_stacktrace": false
   },
   "logto": {
+    "enabled": true,
     "endpoint": "https://api.logto.io",
     "api_key": "your-api-key",
     "app_id": "your-app-id",

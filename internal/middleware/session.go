@@ -15,7 +15,8 @@ import (
 
 // LogtoSessionStorage: Logto Session 存储适配器
 type LogtoSessionStorage struct {
-	store *session.Store
+	store  *session.Store
+	logger interfaces.Logger
 }
 
 // GetItem: 实现 Logto Storage 接口
@@ -35,6 +36,14 @@ func (s *LogtoSessionStorage) GetItem(key string) string {
 // SetItem: 实现 Logto Storage 接口
 func (s *LogtoSessionStorage) SetItem(key, value string) {
 	s.store.Set(key, value)
+	defer func() {
+		if r := recover(); r != nil {
+			// 通过日志记录错误
+			log := s.logger.Named("LogtoSessionStorage")
+			log.Error("Failed to set item in session store", interfaces.ErrorField(errors.New("set item failed")))
+			log.Error("Recovered from panic", interfaces.ErrorField(r.(error)))
+		}
+	}()
 	s.store.Save()
 }
 
@@ -63,8 +72,8 @@ func NewLogtoSessionMiddleware(cfg *config.Config, logger interfaces.Logger) (*L
 	// todo 正式环境修改 secure, domain, samesite 等配置
 	sessionConfig := session.Config{
 		Lookup:     "cookie:logto-session", // 固定查找方式
-		Secure:     false,                  // 固定 Cookie 安全标志
-		Domain:     "localhost",            // 固定 Cookie 域
+		Secure:     cfg.IsProduction(),     // 固定 Cookie 安全标志
+		Domain:     cfg.App.Domain,         // 固定 Cookie 域
 		SameSite:   "lax",                  // 固定 SameSite 策略
 		Expiration: 12 * time.Hour,         // 固定 session 过期时间
 	}
@@ -108,11 +117,10 @@ func (m *LogtoSessionMiddleware) Handler() fiber.Handler {
 		store := m.sess.Get(c)
 
 		// 创建 Logto Storage 实例
-		storage := &LogtoSessionStorage{store: store}
+		storage := &LogtoSessionStorage{store: store, logger: m.logger}
 
 		// 创建 Logto 客户端实例
 		logtoClient := client.NewLogtoClient(m.logtoConfig, storage)
-		logtoClient.FetchUserInfo()
 
 		// 将实例存储到上下文中
 		c.Locals("logto_client", logtoClient)

@@ -166,6 +166,12 @@ func (c *Container) initServices() error {
 // initHandlers 初始化处理器层
 func (c *Container) initHandlers() error {
 
+	// 初始化 Logto 用户认证处理器
+	c.logtoAuthHandler = handlers.NewLogtoAuthHandler(
+		c.logger,
+		c.config,
+	)
+
 	return nil
 }
 

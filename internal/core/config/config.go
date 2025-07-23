@@ -25,6 +25,7 @@ type AppConfig struct {
 	Version string `json:"version" yaml:"version"`
 	Mode    string `json:"mode" yaml:"mode"` // development, production, test
 	Debug   bool   `json:"debug" yaml:"debug"`
+	Domain  string `json:"domain" yaml:"domain"` // 应用域名
 }
 
 // ServerConfig 服务器配置
@@ -119,6 +120,7 @@ func DefaultConfig() *Config {
 			Version: "1.0.0",
 			Mode:    "development",
 			Debug:   true,
+			Domain:  "localhost", // 默认域名
 		},
 		Server: &ServerConfig{
 			Port:         8080,
@@ -128,6 +130,13 @@ func DefaultConfig() *Config {
 			IdleTimeout:  120,
 			BodyLimit:    "4MB",
 			Prefork:      false,
+		},
+		Logto: &LogtoConfig{
+			Enabled:     true,
+			Endpoint:    "https://api.logto.io",
+			Secret:      "your-api-key",
+			AppID:       "your-app-id",
+			CallbackURI: "http://localhost:8080/callback",
 		},
 		Database: &DatabaseConfig{
 			MySQL: &storages.MySQLConfig{
@@ -289,8 +298,5 @@ func (c *LogtoConfig) GetAppID() string {
 }
 
 func (c *LogtoConfig) GetCallbackURI() string {
-	if c.CallbackURI == "" {
-		return "http://localhost:8080/callback" // 默认回调地址
-	}
 	return c.CallbackURI
 }
