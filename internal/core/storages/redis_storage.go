@@ -19,6 +19,7 @@ import (
 type RedisConfig struct {
 	Host          string        `json:"host"`            // 主机地址
 	Port          int           `json:"port"`            // 端口号
+	Username      string        `json:"username"`        // 用户名
 	Password      string        `json:"password"`        // 密码
 	Database      int           `json:"database"`        // 数据库索引
 	MaxRetries    int           `json:"max_retries"`     // 最大重试次数
@@ -102,6 +103,24 @@ func (c *RedisConfig) Validate() error {
 	return nil
 }
 
+// NormalizeDuration 单位归一化
+//
+// 描述: 将 config.json 解析出来的秒数参数转为 time.Duration
+//
+// 返回:
+//
+//	无
+func (c *RedisConfig) NormalizeDuration() {
+	c.DialTimeout = c.DialTimeout * time.Second
+	c.ReadTimeout = c.ReadTimeout * time.Second
+	c.WriteTimeout = c.WriteTimeout * time.Second
+	c.PoolTimeout = c.PoolTimeout * time.Second
+	c.IdleTimeout = c.IdleTimeout * time.Second
+	c.IdleCheckFreq = c.IdleCheckFreq * time.Second
+	c.MaxConnAge = c.MaxConnAge * time.Second
+	c.DefaultTTL = c.DefaultTTL * time.Second
+}
+
 // GetConnectionString 获取连接字符串
 //
 // 描述: 构建Redis连接字符串
@@ -138,6 +157,8 @@ func NewRedisStorage(config *RedisConfig) (interfaces.CacheStorage, error) {
 		return nil, errors.New("🚫 Redis配置不能为空")
 	}
 
+	config.NormalizeDuration() // 单位归一化
+
 	if err := config.Validate(); err != nil {
 		return nil, errors.Wrap(err, "🚫 Redis配置验证失败")
 	}
@@ -173,6 +194,7 @@ func (s *RedisStorage) Connect(ctx context.Context) error {
 	// 创建Redis客户端配置
 	opts := &redis.Options{
 		Addr:         fmt.Sprintf("%s:%d", s.config.Host, s.config.Port),
+		Username:     s.config.Username,
 		Password:     s.config.Password,
 		DB:           s.config.Database,
 		MaxRetries:   s.config.MaxRetries,

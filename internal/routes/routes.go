@@ -39,6 +39,8 @@ func (r *Routes) Setup() {
 
 // setupMiddlewares 设置全局中间件
 func (r *Routes) setupMiddlewares() {
+	cfg := r.container.GetConfig()
+
 	// 恢复中间件
 	r.app.Use(recover.New())
 
@@ -62,11 +64,12 @@ func (r *Routes) setupMiddlewares() {
 
 	// CORS中间件
 	r.app.Use(cors.New(cors.Config{
-		AllowOrigins:     "*",
-		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
-		AllowHeaders:     "Origin,Content-Type,Accept,Authorization,X-Request-ID",
-		AllowCredentials: true,
-		ExposeHeaders:    "X-Request-ID",
+		AllowOrigins:     cfg.Cors.AllowOrigin,
+		AllowMethods:     cfg.Cors.AllowMethods,
+		AllowHeaders:     cfg.Cors.AllowHeaders,
+		ExposeHeaders:    cfg.Cors.ExposeHeaders,
+		AllowCredentials: cfg.Cors.AllowCredentials,
+		MaxAge:           cfg.Cors.MaxAge,
 	}))
 }
 
