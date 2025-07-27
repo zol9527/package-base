@@ -14,6 +14,7 @@ type Config struct {
 	Database *DatabaseConfig `json:"database" yaml:"database"`
 	JWT      *JWTConfig      `json:"jwt" yaml:"jwt"`
 	Security *SecurityConfig `json:"security" yaml:"security"`
+	Cors     *CorsConfig     `json:"cors" yaml:"cors"`
 	Logger   *LoggerConfig   `json:"logger" yaml:"logger"`
 	Logto    *LogtoConfig    `json:"logto" yaml:"logto"`
 	Session  *SessionConfig  `json:"session" yaml:"session"`
@@ -91,6 +92,16 @@ type SecurityConfig struct {
 	AccountLockDuration  int  `json:"account_lock_duration" yaml:"account_lock_duration"` // 分钟
 }
 
+// CORS 配置
+type CorsConfig struct {
+	AllowOrigin      string `json:"allow_origin" yaml:"allow_origin"`
+	AllowMethods     string `json:"allow_methods" yaml:"allow_methods"`
+	AllowHeaders     string `json:"allow_headers" yaml:"allow_headers"`
+	AllowCredentials bool   `json:"allow_credentials" yaml:"allow_credentials"`
+	ExposeHeaders    string `json:"expose_headers" yaml:"expose_headers"`
+	MaxAge           int    `json:"max_age" yaml:"max_age"`
+}
+
 // LoggerConfig 日志配置
 type LoggerConfig struct {
 	Level            string `json:"level" yaml:"level"`
@@ -157,6 +168,7 @@ func DefaultConfig() *Config {
 			Redis: &storages.RedisConfig{
 				Host:          "localhost",
 				Port:          6379,
+				Username:      "",
 				Password:      "",
 				Database:      0,
 				PoolSize:      10,
@@ -181,6 +193,14 @@ func DefaultConfig() *Config {
 			RefreshTokenExpire:  86400, // 24小时
 			Issuer:              "package-base",
 			EnableRefreshRotate: true,
+		},
+		Cors: &CorsConfig{
+			AllowOrigin:      "*",
+			AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
+			AllowHeaders:     "Origin,Content-Type,Accept,Authorization,X-Request-ID",
+			ExposeHeaders:    "X-Request-ID",
+			AllowCredentials: true,
+			MaxAge:           3600,
 		},
 		Security: &SecurityConfig{
 			PasswordMinLength:    8,
@@ -263,7 +283,7 @@ func (c *Config) IsProduction() bool {
 type LogtoConfig struct {
 	Enabled     bool   `json:"enabled" yaml:"enabled"`
 	Endpoint    string `json:"endpoint" yaml:"endpoint"`
-	Secret      string `json:"api_key" yaml:"api_key"`
+	Secret      string `json:"secret" yaml:"secret"`
 	AppID       string `json:"app_id" yaml:"app_id"`
 	CallbackURI string `json:"redirect_uri" yaml:"redirect_uri"`
 }

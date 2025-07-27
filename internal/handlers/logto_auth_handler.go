@@ -3,6 +3,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"package-base/internal/core/config"
 	"package-base/internal/core/interfaces"
@@ -27,30 +28,47 @@ func NewLogtoAuthHandler(logger interfaces.Logger, cfg *config.Config) *LogtoAut
 	}
 }
 
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
+}
+
 // callback 处理 Logto 回调
 func (h *LogtoAuthHandler) LogtoCallback(c *fiber.Ctx) error {
-	// 获取 Logto 客户端实例
-	logtoClient, ok := c.Locals("logto_client").(*client.LogtoClient)
-	if !ok {
-		h.logger.Error("Logto client not found in context")
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.Error(500, ""))
-	}
 
-	// 调用 logto callback 方法
-	httpRequest := &http.Request{}
-	err := fasthttpadaptor.ConvertRequest(c.Context(), httpRequest, true)
-	if err != nil {
-		h.logger.Error("Failed to convert request", interfaces.ErrorField(err))
+	log := h.logger.Named("logto.callback")
+
+	// 获取 client
+	logtoClient := c.Locals("logto_client").(*client.LogtoClient)
+	if logtoClient == nil {
+		log.Error("Logto client not found in context")
 		return c.Status(fiber.StatusInternalServerError).JSON(dto.Error(500, "Internal server error"))
 	}
 
-	err = logtoClient.HandleSignInCallback(httpRequest)
-	if err != nil {
-		h.logger.Error("Logto callback failed", interfaces.ErrorField(err))
-		return c.Status(fiber.StatusBadRequest).JSON(dto.Error(400, "Bad request"))
+	// fiber request 转化为 http request
+	ctx := c.Context()
+	var httpReq http.Request
+	if err := fasthttpadaptor.ConvertRequest(ctx, &httpReq, false); err != nil { // 添加错误检测
+		h.logger.Error("ConvertRequest failed", interfaces.ErrorField(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.Error(500, "Internal server error"))
 	}
 
-	return c.Redirect("/", fiber.StatusFound)
+	// fix: 修复 RequestURI 中不存的问题
+	httpReq.RequestURI = httpReq.URL.RequestURI()
+
+	// 使用 callback
+	err := logtoClient.HandleSignInCallback(&httpReq) // 传递指针
+	if err != nil {
+		log.Error("Logto callback failed",
+			interfaces.ErrorField(err),
+			interfaces.String("error_type", fmt.Sprintf("%T", err)),
+		)
+		return c.Status(fiber.StatusBadRequest).JSON(dto.Error(500, "Received an error from upstream service"))
+	}
+
+	return c.Redirect("http://localhost:3000", fiber.StatusFound)
 }
 
 // LogtoLogout 处理 Logto 登出
@@ -85,21 +103,31 @@ func (h *LogtoAuthHandler) LogtoLogout(c *fiber.Ctx) error {
 
 // HandleLogin 处理用户登录
 func (h *LogtoAuthHandler) LogtoLogin(c *fiber.Ctx) error {
+	log := h.logger.Named("logto.login")
+
 	// 获取 Logto 客户端实例
 	logtoClient, ok := c.Locals("logto_client").(*client.LogtoClient)
 	if !ok {
-		h.logger.Error("Logto client not found in context")
-		return c.Status(fiber.StatusInternalServerError).JSON(dto.Error(500, "Logto client not found"))
+		log.Error("Logto client not found in context")
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.Error(500, "Internal server error"))
 	}
 
 	// 调用 Logto 登录方法
 	authURL, err := logtoClient.SignInWithRedirectUri(h.cfg.Logto.GetCallbackURI())
 	if err != nil {
-		h.logger.Error("Failed to login", interfaces.ErrorField(err))
-		return c.Status(fiber.StatusBadRequest).JSON(dto.Error(400, "Failed to login"))
+		log.Error("Logto登录失败",
+			interfaces.ErrorField(err),
+			interfaces.String("error_type", fmt.Sprintf("%T", err)),
+		)
+		return c.Status(fiber.StatusBadRequest).JSON(dto.Error(500, "Internal server error"))
 	}
 
 	return c.Redirect(authURL, fiber.StatusFound)
+}
+
+// LogtoValidateToken 使用 jwts 验证 token
+func (h *LogtoAuthHandler) LogtoValidateToken(c *fiber.Ctx) error {
+	return nil
 }
 
 // 注册路由组

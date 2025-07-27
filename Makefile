@@ -25,12 +25,6 @@ help: ## 显示帮助信息
 dev: ## 启动开发服务器
 	@echo "🚀 启动开发服务器..."
 	@go run $(CMD_DIR)/main.go
-
-.PHONY: watch
-watch: ## 监听文件变化并自动重启（需要安装air）
-	@echo "👀 启动文件监听模式..."
-	@air -c .air.toml
-
 # 构建相关命令
 .PHONY: build
 build: ## 构建应用程序

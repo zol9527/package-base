@@ -17,32 +17,33 @@
   },
   "database": {
     "mysql": {
-      "host": "localhost",
-      "port": 3306,
-      "username": "root",
-      "password": "password",
-      "database": "package_base",
+      "host": "192.168.3.10",
+      "port": 4100,
+      "username": "test",
+      "password": "test",
+      "database": "test_db",
       "charset": "utf8mb4",
       "parse_time": true,
       "loc": "Local",
-      "max_open_conns": 100,
+      "max_open_conns": 10,
       "max_idle_conns": 10,
       "conn_max_lifetime": 3600,
       "conn_max_idle_time": 600,
       "log_level": "info"
     },
     "redis": {
-      "host": "localhost",
+      "host": "192.168.3.10",
       "port": 6379,
+      "username": "",
       "password": "",
       "database": 0,
       "max_retries": 3,
       "pool_size": 10,
       "min_idle_conns": 1,
-      "dial_timeout": 5,
-      "read_timeout": 3,
-      "write_timeout": 3,
-      "pool_timeout": 4,
+      "dial_timeout": 10,
+      "read_timeout": 5,
+      "write_timeout": 5,
+      "pool_timeout": 10,
       "idle_timeout": 300,
       "idle_check_freq": 60,
       "max_conn_age": 1800,
@@ -51,7 +52,7 @@
     }
   },
   "jwt": {
-    "secret": "your-super-secret-jwt-key-change-in-production",
+    "secret": "hMJABF5QGqhpQUq8Pl/sWH1bV2FVQ+A1iujR4HTttBA=",
     "access_token_expire": 900,
     "refresh_token_expire": 86400,
     "issuer": "package-base",
@@ -68,12 +69,20 @@
   "session": {
     "storage": "redis"
   },
+  "cors": {
+    "allow_origin": "http://localhost:3000, http://localhost:3003, http://localhost:8080, http://localhost:3001",
+    "allow_methods": "GET,POST,PUT,DELETE,OPTIONS",
+    "allow_headers": "Content-Type,Authorization,Accept,X-Requested-With,Origin",
+    "allow_credentials": true,
+    "expose_headers": "Content-Length",
+    "max_age": 3600
+  },
   "logger": {
-    "level": "info",
+    "level": "debug",
     "format": "json",
     "enable_file": true,
-    "file_path": "./logs/app.log",
-    "max_size": 100,
+    "file_path": "./logs/app-backend.log",
+    "max_size": 10,
     "max_backups": 5,
     "max_age": 30,
     "compress": true,
@@ -85,9 +94,9 @@
   },
   "logto": {
     "enabled": true,
-    "endpoint": "https://api.logto.io",
-    "api_key": "your-api-key",
-    "app_id": "your-app-id",
-    "redirect_uri": "http://localhost:8080/callback"
+    "endpoint": "http://localhost:3001/",
+    "secret": "oZlRaAS790tqaT3Z7Q0ggHw7nbhSaZbP",
+    "app_id": "c3x1wg4x3bxgluwlkwqp2",
+    "redirect_uri": "http://localhost:8080/api/v1/auth/callback"
   }
 }
