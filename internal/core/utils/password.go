@@ -1,13 +1,59 @@
 package utils
 
 import (
+	"os"
+	"strconv"
+	"sync/atomic"
+
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
+var bcryptCost atomic.Int32
+
+func init() {
+	// 允许通过环境变量 BCRYPT_COST 动态设置，非法或缺失则使用默认值
+	bcryptCost.Store(int32(bcrypt.DefaultCost))
+	if v := os.Getenv("BCRYPT_COST"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= bcrypt.MinCost && n <= bcrypt.MaxCost {
+			bcryptCost.Store(int32(n))
+		}
+	}
+}
+
+// Function: SetBcryptCost
+//
+// Description: 运行期动态设置 bcrypt cost（测试或性能基准环境使用），非法值将被忽略。
+//
+// Parameters:
+//
+//	cost(int): 期望值 (bcrypt.MinCost ~ bcrypt.MaxCost)
+//
+// Returns:
+//
+//	ok(bool): 是否成功应用
+func SetBcryptCost(cost int) bool {
+	if cost < bcrypt.MinCost || cost > bcrypt.MaxCost {
+		return false
+	}
+	bcryptCost.Store(int32(cost))
+	return true
+}
+
+// Function: GetBcryptCost
+//
+// Description: 获取当前生效的 bcrypt cost。
+//
+// Parameters:
+//
+// Returns:
+//
+//	cost(int): 当前 cost
+func GetBcryptCost() int { return int(bcryptCost.Load()) }
+
 // HashPassword 使用bcrypt加密密码
 func HashPassword(password string) (string, error) {
-	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), GetBcryptCost())
 	if err != nil {
 		return "", errors.Wrap(err, "failed to hash password")
 	}

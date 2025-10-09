@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -33,7 +34,22 @@ func NewJWTManager(secret string, accessDuration, refreshDuration time.Duration)
 	}
 }
 
-// GenerateAccessToken 生成访问Token
+// Function: GenerateAccessToken
+//
+// Description: 生成访问 Token，携带用户基础身份与角色信息；为保证在同一秒内多次生成也能完成轮换，增加随机 JTI。
+//
+// Parameters:
+//
+//	userID(string): 用户ID
+//	username(string): 用户名
+//	email(string): 邮箱
+//	role(int): 角色标识
+//
+// Returns:
+//
+//	token(string): 签名后的访问 token 字符串
+//	expires_at(time.Time): 过期时间
+//	err(error): 可能的错误
 func (j *JWTManager) GenerateAccessToken(userID, username, email string, role int) (string, time.Time, error) {
 	expiresAt := time.Now().Add(j.accessTokenDuration)
 
@@ -47,6 +63,7 @@ func (j *JWTManager) GenerateAccessToken(userID, username, email string, role in
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Subject:   userID,
+			ID:        uuid.NewString(), // 保证同一秒生成的 token 也不同，实现 access_token 轮换
 		},
 	}
 
@@ -59,15 +76,47 @@ func (j *JWTManager) GenerateAccessToken(userID, username, email string, role in
 	return tokenString, expiresAt, nil
 }
 
+// Function: SetAccessTokenDuration
+//
+// Description: 动态更新访问 token 有效期（用于 TOKEN_TTL 配置热更新场景）。
+//
+// Parameters:
+//
+//	d(dur time.Duration): 新的访问 token 时长
+//
+// Returns:
+//
+//	无
+func (j *JWTManager) SetAccessTokenDuration(d time.Duration) {
+	if d > 0 {
+		j.accessTokenDuration = d
+	}
+}
+
+// Function: GetAccessTokenDuration
+//
+// Description: 返回当前访问 token 时长。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	duration(time.Duration): 当前时长
+func (j *JWTManager) GetAccessTokenDuration() time.Duration { return j.accessTokenDuration }
+
 // GenerateRefreshToken 生成刷新Token
 func (j *JWTManager) GenerateRefreshToken(userID string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(j.refreshTokenDuration)
 
+	// 增加随机 JTI 以避免同一秒内重复生成产生相同 token
 	claims := &jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(expiresAt),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		NotBefore: jwt.NewNumericDate(time.Now()),
 		Subject:   userID,
+		ID:        uuid.NewString(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -77,6 +126,23 @@ func (j *JWTManager) GenerateRefreshToken(userID string) (string, time.Time, err
 	}
 
 	return tokenString, expiresAt, nil
+}
+
+// Function: SetRefreshTokenDuration
+//
+// Description: 动态更新刷新 token 有效期，用于测试或运行时策略调整（如缩短存活进行安全策略收紧）。
+//
+// Parameters:
+//
+//	d(time.Duration): 新的刷新 token 时长，必须 >0 才会生效
+//
+// Returns:
+//
+//	无
+func (j *JWTManager) SetRefreshTokenDuration(d time.Duration) {
+	if d > 0 {
+		j.refreshTokenDuration = d
+	}
 }
 
 // ValidateAccessToken 验证访问Token

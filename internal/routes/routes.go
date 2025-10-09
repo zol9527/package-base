@@ -3,6 +3,7 @@ package routes
 import (
 	"package-base/internal/container"
 	"package-base/internal/core/log"
+	"package-base/internal/handlers"
 	"package-base/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,13 +12,31 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
-// Routes 路由配置
+// Function: Routes
+//
+// Description: 路由配置结构，封装 Fiber 应用与依赖容器，提供中间件注册、API 分组以及健康检查端点初始化。
+//
+// Fields:
+//
+//	app(*fiber.App): Fiber 应用实例
+//	container(*container.Container): 全局依赖注入容器，暴露服务、配置与存储访问
 type Routes struct {
 	app       *fiber.App
 	container *container.Container
 }
 
-// NewRoutes 创建路由配置
+// Function: NewRoutes
+//
+// Description: 创建并返回 Routes 实例，不做副作用注册，需进一步调用 Setup 完成路由装配。
+//
+// Parameters:
+//
+//	app(*fiber.App): Fiber 应用实例
+//	container(*container.Container): 依赖容器
+//
+// Returns:
+//
+//	(*Routes): Routes 结构指针
 func NewRoutes(app *fiber.App, container *container.Container) *Routes {
 	return &Routes{
 		app:       app,
@@ -25,7 +44,17 @@ func NewRoutes(app *fiber.App, container *container.Container) *Routes {
 	}
 }
 
-// Setup 设置路由
+// Function: Setup
+//
+// Description: 装配全部路由，包括全局中间件、API 分组与健康检查。调用顺序：先中间件 -> API -> 健康检查。
+//
+// Parameters:
+//
+//	(r *Routes): 接收者，路由配置实例
+//
+// Returns:
+//
+//	(void): 无返回值
 func (r *Routes) Setup() {
 	// 设置全局中间件
 	r.setupMiddlewares()
@@ -37,7 +66,17 @@ func (r *Routes) Setup() {
 	r.setupHealthRoutes()
 }
 
-// setupMiddlewares 设置全局中间件
+// Function: setupMiddlewares
+//
+// Description: 注册全局中间件链，包括 panic 恢复、request id、统一结构化日志、安全头、CORS。
+//
+// Parameters:
+//
+//	(r *Routes): 接收者
+//
+// Returns:
+//
+//	(void): 无返回值
 func (r *Routes) setupMiddlewares() {
 	cfg := r.container.GetConfig()
 
@@ -55,12 +94,7 @@ func (r *Routes) setupMiddlewares() {
 	// 设置 security headers
 	r.app.Use(middleware.SecurityHeaders())
 
-	// logto Session 中间键
-	logtoSessionMiddleware, err := middleware.NewLogtoSessionMiddleware(r.container.GetConfig(), logger)
-	if err != nil {
-		logger.Fatal("Failed to create Logto session middleware")
-	}
-	r.app.Use(logtoSessionMiddleware.Handler())
+	// 认证 session 组件已移除，后续需要可在此添加新的认证中间件
 
 	// CORS中间件
 	r.app.Use(cors.New(cors.Config{
@@ -73,20 +107,40 @@ func (r *Routes) setupMiddlewares() {
 	}))
 }
 
-// setupAPIRoutes 设置API路由
+// Function: setupAPIRoutes
+//
+// Description: 注册业务 API 路由。当前仅包含 /api/auth 下的认证登录与刷新接口，可在此扩展版本化分组。
+//
+// Parameters:
+//
+//	(r *Routes): 接收者
+//
+// Returns:
+//
+//	(void): 无返回值
 func (r *Routes) setupAPIRoutes() {
-	// API v1 路由组
-	v1 := r.app.Group("/api/v1")
+	api := r.app.Group("/api")
+	authGroup := api.Group("/auth")
 
-	// Logto 身份认证
-	logtoAuthHandler := r.container.GetLogtoAuthHandler()
+	// 构建 AuthHandler （需要容器中已装配 AuthService）
+	logger := log.L().Named("handler.auth")
+	authHandler := handlers.NewAuthHandler(r.container.GetAuthService(), logger)
 
-	// 认证路由组
-	auth := v1.Group("/auth")
-	logtoAuthHandler.RegisterLogtoAuthRoutes(auth)
+	authGroup.Post("/login", authHandler.Login)
+	authGroup.Post("/refresh", authHandler.RefreshToken)
 }
 
-// setupHealthRoutes 设置健康检查路由
+// Function: setupHealthRoutes
+//
+// Description: 注册健康检查与 ping 端点，用于外部存活探测与简单连通性验证。
+//
+// Parameters:
+//
+//	(r *Routes): 接收者
+//
+// Returns:
+//
+//	(void): 无返回值
 func (r *Routes) setupHealthRoutes() {
 	r.app.Get("/health", func(c *fiber.Ctx) error {
 		// 执行健康检查

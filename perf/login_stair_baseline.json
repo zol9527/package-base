@@ -1,0 +1,115 @@
+{
+  "mode": "stair",
+  "target": "http://localhost:8080/api/auth/login",
+  "timestamp": "2025-10-09T10:40:25+08:00",
+  "per_concurrency": [
+    {
+      "concurrency": 4,
+      "runs": [
+        {
+          "index": 0,
+          "total": 81,
+          "success": 81,
+          "errors": 0,
+          "rps": 16.2,
+          "p50_ms": 248.552,
+          "p95_ms": 326.429
+        },
+        {
+          "index": 1,
+          "total": 101,
+          "success": 101,
+          "errors": 0,
+          "rps": 20.2,
+          "p50_ms": 195.719,
+          "p95_ms": 237.576
+        },
+        {
+          "index": 2,
+          "total": 95,
+          "success": 95,
+          "errors": 0,
+          "rps": 19,
+          "p50_ms": 208.146,
+          "p95_ms": 270.89
+        }
+      ],
+      "median_p95_ms": 270.89,
+      "median_p50_ms": 208.146,
+      "best_p95_ms": 237.576,
+      "worst_p95_ms": 326.429
+    },
+    {
+      "concurrency": 8,
+      "runs": [
+        {
+          "index": 0,
+          "total": 176,
+          "success": 176,
+          "errors": 0,
+          "rps": 35.2,
+          "p50_ms": 227.358,
+          "p95_ms": 283.911
+        },
+        {
+          "index": 1,
+          "total": 168,
+          "success": 168,
+          "errors": 0,
+          "rps": 33.6,
+          "p50_ms": 242.17,
+          "p95_ms": 280.828
+        },
+        {
+          "index": 2,
+          "total": 147,
+          "success": 147,
+          "errors": 0,
+          "rps": 29.4,
+          "p50_ms": 251.181,
+          "p95_ms": 640.735
+        }
+      ],
+      "median_p95_ms": 283.911,
+      "median_p50_ms": 242.17,
+      "best_p95_ms": 280.828,
+      "worst_p95_ms": 640.735
+    },
+    {
+      "concurrency": 16,
+      "runs": [
+        {
+          "index": 0,
+          "total": 30,
+          "success": 22,
+          "errors": 8,
+          "rps": 6,
+          "p50_ms": 2792.183,
+          "p95_ms": 4595.462
+        },
+        {
+          "index": 1,
+          "total": 31,
+          "success": 26,
+          "errors": 5,
+          "rps": 6.2,
+          "p50_ms": 2711.443,
+          "p95_ms": 4689.389
+        },
+        {
+          "index": 2,
+          "total": 32,
+          "success": 15,
+          "errors": 17,
+          "rps": 6.4,
+          "p50_ms": 2745.152,
+          "p95_ms": 4987.5
+        }
+      ],
+      "median_p95_ms": 4689.389,
+      "median_p50_ms": 2745.152,
+      "best_p95_ms": 4595.462,
+      "worst_p95_ms": 4987.5
+    }
+  ]
+}

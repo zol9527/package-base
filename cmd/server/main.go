@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -130,6 +132,17 @@ func (a *Application) Start() error {
 	// 在生产模式下禁用调试信息
 	if a.config.IsProduction() {
 		a.app.Server().Logger = nil
+	}
+
+	// 可选：pprof 调试服务
+	if os.Getenv("PPROF") == "1" {
+		go func() {
+			addr := ":6060"
+			if err := http.ListenAndServe(addr, nil); err != nil {
+				logger := a.logger.Named("pprof")
+				logger.Warn("pprof server exit", interfaces.ErrorField(err))
+			}
+		}()
 	}
 
 	// 启动HTTP服务器

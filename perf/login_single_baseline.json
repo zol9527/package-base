@@ -1,0 +1,58 @@
+{
+  "mode": "single",
+  "target": "http://localhost:8080/api/auth/login",
+  "concurrency": 8,
+  "duration": "15s",
+  "runs": [
+    {
+      "index": 0,
+      "total": 515,
+      "success": 515,
+      "errors": 0,
+      "rps": 34.333333333333336,
+      "p50_ms": 230.312,
+      "p95_ms": 285.14
+    },
+    {
+      "index": 1,
+      "total": 468,
+      "success": 468,
+      "errors": 0,
+      "rps": 31.2,
+      "p50_ms": 248.003,
+      "p95_ms": 305.686
+    },
+    {
+      "index": 2,
+      "total": 536,
+      "success": 536,
+      "errors": 0,
+      "rps": 35.733333333333334,
+      "p50_ms": 222.585,
+      "p95_ms": 260.328
+    },
+    {
+      "index": 3,
+      "total": 532,
+      "success": 532,
+      "errors": 0,
+      "rps": 35.46666666666667,
+      "p50_ms": 221.867,
+      "p95_ms": 263.724
+    },
+    {
+      "index": 4,
+      "total": 504,
+      "success": 504,
+      "errors": 0,
+      "rps": 33.6,
+      "p50_ms": 234.311,
+      "p95_ms": 300.539
+    }
+  ],
+  "median_p95_ms": 285.14,
+  "median_p50_ms": 230.312,
+  "best_p95_ms": 260.328,
+  "worst_p95_ms": 305.686,
+  "timestamp": "2025-10-09T10:40:15+08:00"
+}

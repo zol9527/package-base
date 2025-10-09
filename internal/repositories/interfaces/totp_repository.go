@@ -7,6 +7,18 @@ import (
 	"package-base/internal/options"
 )
 
+// Function: TotpSecretRepository
+//
+// Description: TOTP 密钥的仓储接口，支持启用/禁用与多种查询方法，服务于二步验证场景。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // TotpSecretRepository TOTP密钥存储接口
 type TotpSecretRepository interface {
 	// 基础CRUD操作
@@ -27,6 +39,18 @@ type TotpSecretRepository interface {
 	IsEnabledForUser(ctx context.Context, userID string) (bool, error)
 }
 
+// Function: BackupCodeRepository
+//
+// Description: 备用验证码的仓储接口，支持批量生成、校验与统计，用于账户恢复场景。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // BackupCodeRepository 备用码存储接口
 type BackupCodeRepository interface {
 	// 基础CRUD操作

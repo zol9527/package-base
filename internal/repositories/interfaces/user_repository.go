@@ -6,6 +6,18 @@ import (
 	"package-base/internal/options"
 )
 
+// Function: UserRepository
+//
+// Description: 用户领域的仓储接口，定义用户数据的读写与查询契约，屏蔽底层持久化实现（如 MySQL/SQLite）。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // UserRepository 用户存储接口
 type UserRepository interface {
 	// Create 创建用户
@@ -31,6 +43,13 @@ type UserRepository interface {
 
 	// UpdateLoginInfo 更新登录信息（登录次数、最后登录时间等）
 	UpdateLoginInfo(ctx context.Context, userID string) error
+
+	// --- 兼容 SignIn 最小需求别名方法（T011 新增） ---
+	// FindByUsernameOrEmail 按用户名或邮箱查找用户（GetByUsernameOrEmail 的语义别名，供上层更语义化调用）
+	FindByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (*models.User, error)
+
+	// UpdateLoginMeta 更新登录相关统计（UpdateLoginInfo 的语义别名，聚焦登录元信息）
+	UpdateLoginMeta(ctx context.Context, userID string) error
 
 	// ExistsByUsername 检查用户名是否存在
 	ExistsByUsername(ctx context.Context, username string) (bool, error)

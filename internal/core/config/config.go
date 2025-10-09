@@ -16,8 +16,12 @@ type Config struct {
 	Security *SecurityConfig `json:"security" yaml:"security"`
 	Cors     *CorsConfig     `json:"cors" yaml:"cors"`
 	Logger   *LoggerConfig   `json:"logger" yaml:"logger"`
-	Logto    *LogtoConfig    `json:"logto" yaml:"logto"`
 	Session  *SessionConfig  `json:"session" yaml:"session"`
+
+	// 扩展任务 T016: 驱动与对象存储及 token TTL
+	DBDriver      string `json:"db_driver" yaml:"db_driver"`           // e.g. mysql, sqlite, postgres (未来可拓展)
+	ObjectStorage string `json:"object_storage" yaml:"object_storage"` // local, ali_oss 等
+	TokenTTL      int    `json:"token_ttl" yaml:"token_ttl"`           // 覆盖 JWT.AccessTokenExpire (秒) 若 >0
 }
 
 // AppConfig 应用配置
@@ -126,6 +130,9 @@ type SessionConfig struct {
 // DefaultConfig 返回默认配置
 func DefaultConfig() *Config {
 	return &Config{
+		DBDriver:      "mysql",
+		ObjectStorage: "local",
+		TokenTTL:      0, // 0 表示沿用 JWT.AccessTokenExpire
 		App: &AppConfig{
 			Name:    "package-base",
 			Version: "1.0.0",
@@ -141,13 +148,6 @@ func DefaultConfig() *Config {
 			IdleTimeout:  120,
 			BodyLimit:    "4MB",
 			Prefork:      false,
-		},
-		Logto: &LogtoConfig{
-			Enabled:     true,
-			Endpoint:    "https://api.logto.io",
-			Secret:      "your-api-key",
-			AppID:       "your-app-id",
-			CallbackURI: "http://localhost:8080/callback",
 		},
 		Database: &DatabaseConfig{
 			MySQL: &storages.MySQLConfig{
@@ -272,51 +272,23 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("password min length must be at least 6")
 	}
 
+	// DBDriver 基本校验（占位，可扩展）
+	if c.DBDriver == "" {
+		c.DBDriver = "mysql"
+	}
+
+	if c.ObjectStorage == "" {
+		c.ObjectStorage = "local"
+	}
+
+	if c.TokenTTL < 0 {
+		return fmt.Errorf("token_ttl must be >=0")
+	}
+
 	return nil
 }
 
 // IsProduction 检查是否为生产环境
 func (c *Config) IsProduction() bool {
 	return c.App.Mode == "production"
-}
-
-type LogtoConfig struct {
-	Enabled     bool   `json:"enabled" yaml:"enabled"`
-	Endpoint    string `json:"endpoint" yaml:"endpoint"`
-	Secret      string `json:"secret" yaml:"secret"`
-	AppID       string `json:"app_id" yaml:"app_id"`
-	CallbackURI string `json:"redirect_uri" yaml:"redirect_uri"`
-}
-
-func (c *LogtoConfig) Validate() error {
-	if c.Endpoint == "" {
-		return fmt.Errorf("logto endpoint is required")
-	}
-	if c.Secret == "" {
-		return fmt.Errorf("logto api_key is required")
-	}
-	if c.AppID == "" {
-		return fmt.Errorf("logto app_id is required")
-	}
-	return nil
-}
-
-func (c *LogtoConfig) IsEnabled() bool {
-	return c.Enabled
-}
-
-func (c *LogtoConfig) GetEndpoint() string {
-	return c.Endpoint
-}
-
-func (c *LogtoConfig) GetSecret() string {
-	return c.Secret
-}
-
-func (c *LogtoConfig) GetAppID() string {
-	return c.AppID
-}
-
-func (c *LogtoConfig) GetCallbackURI() string {
-	return c.CallbackURI
 }

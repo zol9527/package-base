@@ -91,12 +91,5 @@
     "color_output": true,
     "enable_caller": true,
     "enable_stacktrace": false
-  },
-  "logto": {
-    "enabled": true,
-    "endpoint": "http://localhost:3001/",
-    "secret": "oZlRaAS790tqaT3Z7Q0ggHw7nbhSaZbP",
-    "app_id": "c3x1wg4x3bxgluwlkwqp2",
-    "redirect_uri": "http://localhost:8080/api/v1/auth/callback"
   }
 }

@@ -5,6 +5,18 @@ import (
 	"time"
 )
 
+// Function: TokenBlacklistRepository
+//
+// Description: Token 黑名单仓储接口，提供加入、查询、移除及清理等操作，确保失效 Token 无法继续使用。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // TokenBlacklistRepository Token黑名单存储接口
 type TokenBlacklistRepository interface {
 	// AddToBlacklist 将token添加到黑名单

@@ -1,9 +1,8 @@
 package middleware
 
 import (
-	"time"
-
 	"package-base/internal/core/interfaces"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -33,7 +32,10 @@ func (m *LoggerMiddleware) Handler() fiber.Handler {
 		c.Set("X-Request-ID", requestID)
 
 		// 记录请求开始日志
+
+		traceID := GetTraceID(c)
 		m.logger.Info("request started",
+			interfaces.String("trace_id", traceID),
 			interfaces.String("request_id", requestID),
 			interfaces.String("method", c.Method()),
 			interfaces.String("path", c.Path()),
@@ -53,7 +55,9 @@ func (m *LoggerMiddleware) Handler() fiber.Handler {
 		username := GetUsername(c)
 
 		// 记录请求完成日志
+		traceID = GetTraceID(c)
 		logFields := []interfaces.Field{
+			interfaces.String("trace_id", traceID),
 			interfaces.String("request_id", requestID),
 			interfaces.String("method", c.Method()),
 			interfaces.String("path", c.Path()),

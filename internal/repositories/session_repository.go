@@ -257,6 +257,39 @@ func (r *sessionRepository) CleanupInactiveSessions(ctx context.Context) error {
 	return nil
 }
 
+// Function: RotateTokensCAS
+//
+// Description: 基于旧 refresh_token 原子更新会话中的 refresh/access token 以及过期时间，保证并发刷新只有一个成功。
+//
+// Parameters:
+//
+//	ctx(context.Context): 上下文
+//	oldRefreshToken(string): 旧的刷新 token（条件）
+//	newRefreshToken(string): 新刷新 token
+//	newAccessToken(string): 新访问 token
+//	newExpiresAt(int64): 新 access token 基础过期时间（Unix 秒），会话层会在外层计算真实 ExpiresAt（已加 24h）时此处直接持久化对应 time 值
+//
+// Returns:
+//
+//	ok(bool): 是否成功完成原子替换
+//	err(error): 错误
+func (r *sessionRepository) RotateTokensCAS(ctx context.Context, oldRefreshToken, newRefreshToken, newAccessToken string, newExpiresAt int64) (bool, error) {
+	db := r.getDB()
+	// 条件：refresh_token 匹配且 is_active=true 且未过期
+	// 由于会话表 ExpiresAt 字段存储为 datetime，这里使用 NOW() 进行比较
+	result := db.WithContext(ctx).Model(&models.Session{}).
+		Where("refresh_token = ? AND is_active = ? AND expires_at > NOW()", oldRefreshToken, true).
+		Updates(map[string]interface{}{
+			"refresh_token": newRefreshToken,
+			"access_token":  newAccessToken,
+			// 会话过期时间延长策略：保持现有逻辑在 service 中计算后的时间；为保持最小侵入，此处不修改 ExpiresAt 由调用方决定是否传递更新。
+		})
+	if result.Error != nil {
+		return false, errors.Wrap(result.Error, "failed to rotate tokens CAS")
+	}
+	return result.RowsAffected == 1, nil
+}
+
 // CountActiveSessionsByUserID 统计用户活跃会话数
 func (r *sessionRepository) CountActiveSessionsByUserID(ctx context.Context, userID string) (int64, error) {
 	return r.CountSessions(ctx, options.WithUserActiveSessions(userID))

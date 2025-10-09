@@ -2,13 +2,12 @@ package container
 
 import (
 	"context"
+	"time"
 
 	"package-base/internal/core/config"
 	"package-base/internal/core/interfaces"
 	"package-base/internal/core/storages"
 	"package-base/internal/core/utils"
-	"package-base/internal/handlers"
-	"package-base/internal/middleware"
 	"package-base/internal/repositories"
 	repoInterfaces "package-base/internal/repositories/interfaces"
 	"package-base/internal/services"
@@ -26,23 +25,25 @@ type Container struct {
 	mysqlStorage interfaces.RelationalStorage
 	redisStorage interfaces.KeyValueStorage
 
+	// 对象存储抽象
+	objectStorage interfaces.ObjectStorage
+
 	// 核心组件
 	jwtManager *utils.JWTManager
 	validator  *utils.Validator
 
 	// 存储层
+	userRepo           repoInterfaces.UserRepository
 	sessionRepo        repoInterfaces.SessionRepository
 	tokenBlacklistRepo repoInterfaces.TokenBlacklistRepository
 	loginAttemptRepo   repoInterfaces.LoginAttemptRepository
 
 	// 服务层
+	authService     serviceInterfaces.AuthService
 	securityService serviceInterfaces.SecurityService
 
-	// 处理器层
-	logtoAuthHandler *handlers.LogtoAuthHandler
-
-	// 中间件
-	authMiddleware *middleware.AuthMiddleware
+	// 处理器/中间件层：外部身份服务依赖已移除，按需再扩展
+	authMiddleware interface{} // 占位，后续可引入新的认证中间件
 }
 
 // NewContainer 创建依赖注入容器
@@ -76,15 +77,7 @@ func (c *Container) Initialize(ctx context.Context) error {
 		return errors.Wrap(err, "failed to initialize services")
 	}
 
-	// 6. 初始化处理器层
-	if err := c.initHandlers(); err != nil {
-		return errors.Wrap(err, "failed to initialize handlers")
-	}
-
-	// 7. 初始化中间件
-	if err := c.initMiddlewares(); err != nil {
-		return errors.Wrap(err, "failed to initialize middlewares")
-	}
+	// 处理器/中间件层当前暂无特定初始化逻辑
 
 	c.logger.Info("container initialized successfully")
 	return nil
@@ -116,15 +109,37 @@ func (c *Container) initStorages(ctx context.Context) error {
 
 	c.redisStorage = redisStorage
 
+	// 初始化对象存储 (T017 分支化)
+	switch c.config.ObjectStorage {
+	case "", "local":
+		localObj, err := storages.NewLocalObjectStorage("data/objects")
+		if err != nil {
+			return errors.Wrap(err, "failed to create local object storage")
+		}
+		c.objectStorage = localObj
+	default:
+		// 未来扩展：如 ali_oss, s3 等；当前返回占位错误以明确未实现
+		c.logger.Warn("object storage driver not implemented, fallback to local", interfaces.String("driver", c.config.ObjectStorage))
+		localObj, err := storages.NewLocalObjectStorage("data/objects")
+		if err != nil {
+			return errors.Wrap(err, "failed to create fallback local object storage")
+		}
+		c.objectStorage = localObj
+	}
+
 	return nil
 }
 
 // initCoreComponents 初始化核心组件
 func (c *Container) initCoreComponents() error {
 	// 初始化JWT管理器
+	accessDur := c.config.JWT.GetAccessTokenExpire()
+	if c.config.TokenTTL > 0 {
+		accessDur = time.Duration(c.config.TokenTTL) * time.Second
+	}
 	jwtManager := utils.NewJWTManager(
 		c.config.JWT.Secret,
-		c.config.JWT.GetAccessTokenExpire(),
+		accessDur,
 		c.config.JWT.GetRefreshTokenExpire(),
 	)
 	c.jwtManager = jwtManager
@@ -137,6 +152,8 @@ func (c *Container) initCoreComponents() error {
 
 // initRepositories 初始化存储层
 func (c *Container) initRepositories() error {
+	// 初始化用户仓库
+	c.userRepo = repositories.NewUserRepository(c.mysqlStorage, c.logger)
 	// 初始化会话仓库
 	c.sessionRepo = repositories.NewSessionRepository(c.mysqlStorage, c.logger)
 
@@ -151,6 +168,14 @@ func (c *Container) initRepositories() error {
 
 // initServices 初始化服务层
 func (c *Container) initServices() error {
+	// 初始化认证服务 (复用已创建的 jwtManager 以支持动态调整时长)
+	c.authService = services.NewAuthServiceWithManager(
+		c.userRepo,
+		c.sessionRepo,
+		c.tokenBlacklistRepo,
+		c.jwtManager,
+		c.logger,
+	)
 
 	// 初始化安全服务
 	c.securityService = services.NewSecurityService(
@@ -164,22 +189,7 @@ func (c *Container) initServices() error {
 }
 
 // initHandlers 初始化处理器层
-func (c *Container) initHandlers() error {
-
-	// 初始化 Logto 用户认证处理器
-	c.logtoAuthHandler = handlers.NewLogtoAuthHandler(
-		c.logger,
-		c.config,
-	)
-
-	return nil
-}
-
-// initMiddlewares 初始化中间件
-func (c *Container) initMiddlewares() error {
-	// 注意：中间件将在路由配置时创建，这里暂不实现
-	return nil
-}
+// initHandlers / initMiddlewares 当前无特定初始化逻辑
 
 // Close 关闭容器
 func (c *Container) Close() error {
@@ -232,6 +242,11 @@ func (c *Container) GetRedisStorage() interfaces.KeyValueStorage {
 	return c.redisStorage
 }
 
+// GetObjectStorage 获取对象存储
+func (c *Container) GetObjectStorage() interfaces.ObjectStorage {
+	return c.objectStorage
+}
+
 // GetJWTManager 获取JWT管理器
 func (c *Container) GetJWTManager() *utils.JWTManager {
 	return c.jwtManager
@@ -262,15 +277,12 @@ func (c *Container) GetSecurityService() serviceInterfaces.SecurityService {
 	return c.securityService
 }
 
-// --- Handlers ---
-func (c *Container) GetLogtoAuthHandler() *handlers.LogtoAuthHandler {
-	return c.logtoAuthHandler
+// GetAuthService 获取认证服务
+func (c *Container) GetAuthService() serviceInterfaces.AuthService {
+	return c.authService
 }
 
-// GetAuthMiddleware 获取认证中间件
-func (c *Container) GetAuthMiddleware() *middleware.AuthMiddleware {
-	return c.authMiddleware
-}
+// 处理器/中间件 Getter：当前无特定暴露方法
 
 // HealthCheck 健康检查
 func (c *Container) HealthCheck(ctx context.Context) error {

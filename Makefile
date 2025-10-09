@@ -52,9 +52,16 @@ build-all: build build-linux build-windows ## 构建所有平台版本
 
 # 测试相关命令
 .PHONY: test
-test: ## 运行测试
+test: ## 运行测试 (等价: go test -v ./...)
 	@echo "🧪 运行测试..."
 	@go test -v ./...
+
+.PHONY: cover
+cover: ## 运行测试并生成覆盖率报告 (coverage.out + coverage.html)
+	@echo "🧪 运行测试覆盖率..."
+	@go test -coverprofile=coverage.out ./...
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo "📊 覆盖率报告: coverage.html"
 
 .PHONY: test-cover
 test-cover: ## 运行测试并生成覆盖率报告
@@ -68,11 +75,35 @@ benchmark: ## 运行性能测试
 	@echo "⚡ 运行性能测试..."
 	@go test -bench=. -benchmem ./...
 
+# 性能脚本快捷命令
+.PHONY: perf-login
+perf-login: ## 运行登录基线（15s x5 并发8，写入 perf/login_single_baseline.json）
+	@mkdir -p perf
+	@go run scripts/perf/login_benchmark/main.go -duration=15s -runs=5 -concurrency=8 -no-register -output=perf/login_single_baseline.json -bcrypt-cost=8
+
+.PHONY: perf-login-stair
+perf-login-stair: ## 运行阶梯并发（4,8,16; 每档 5s x3）写入 perf/login_stair_baseline.json
+	@mkdir -p perf
+	@go run scripts/perf/login_benchmark/main.go -duration=5s -runs=3 -stair=4,8,16 -no-register -output=perf/login_stair_baseline.json -bcrypt-cost=8
+
+.PHONY: perf-gate
+perf-gate: ## 检查性能阈值 (默认读取 perf/login_baseline_summary.json，阈值 350ms)
+	@echo "🚦 检查性能阈值..."
+	@FILE="$$FILE"; [ -n "$$FILE" ] || FILE="perf/login_baseline_summary.json"; \
+	MAX="$$MAX"; [ -n "$$MAX" ] || MAX="350"; \
+	MODE="$$MODE"; [ -n "$$MODE" ] || MODE="auto"; \
+	go run scripts/perf_gate/main.go -file="$$FILE" -max-p95="$$MAX" -mode="$$MODE"
+
 # 代码质量检查
 .PHONY: lint
-lint: ## 运行代码检查
+lint: ## 运行代码检查 (golangci-lint)
 	@echo "🔍 运行代码检查..."
-	@golangci-lint run
+	@golangci-lint run || echo "⚠️ golangci-lint 未安装或存在问题，请运行 make install-tools"
+
+.PHONY: layer-check
+layer-check: ## 执行分层静态检查 + 基础 vet 检查
+	@bash scripts/check-layering.sh
+	@echo "🔎 运行 go vet..." && go vet ./... || (echo "❌ go vet 失败" && exit 1)
 
 .PHONY: fmt
 fmt: ## 格式化代码

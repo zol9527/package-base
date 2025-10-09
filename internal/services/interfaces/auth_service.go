@@ -5,6 +5,18 @@ import (
 	"package-base/internal/dto"
 )
 
+// Function: AuthService
+//
+// Description: 认证服务接口，覆盖注册、登录、刷新、登出、黑名单管理等核心能力，为上层 Handler 提供稳定契约。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // AuthService 认证服务接口
 type AuthService interface {
 	// Register 用户注册
@@ -12,6 +24,9 @@ type AuthService interface {
 
 	// Login 用户登录
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.AuthResponse, error)
+
+	// SignIn 语义别名：用户登录（内部可直接调用 Login，实现最小 SignIn 需求的独立可读性，供后续按任务 T011/T012 规划使用）
+	SignIn(ctx context.Context, req *dto.LoginRequest) (*dto.AuthResponse, error)
 
 	// RefreshToken 刷新Token
 	RefreshToken(ctx context.Context, req *dto.RefreshTokenRequest) (*dto.TokenResponse, error)

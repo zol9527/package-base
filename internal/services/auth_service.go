@@ -27,6 +27,23 @@ type authService struct {
 }
 
 // NewAuthService 创建认证服务实例
+// Function: NewAuthService
+//
+// Description: 传统构造函数（向后兼容），内部自建 JWTManager。推荐在容器中使用 NewAuthServiceWithManager 以便动态调整 token 时长。
+//
+// Parameters:
+//
+//	userRepo(UserRepository): 用户仓库
+//	sessionRepo(SessionRepository): 会话仓库
+//	tokenBlacklistRepo(TokenBlacklistRepository): 黑名单仓库
+//	jwtSecret(string): 签名密钥
+//	accessTokenDuration(time.Duration): access token 时长
+//	refreshTokenDuration(time.Duration): refresh token 时长
+//	logger(interfaces.Logger): 日志
+//
+// Returns:
+//
+//	svc(serviceInterfaces.AuthService): 认证服务实例
 func NewAuthService(
 	userRepo repoInterfaces.UserRepository,
 	sessionRepo repoInterfaces.SessionRepository,
@@ -38,7 +55,39 @@ func NewAuthService(
 ) serviceInterfaces.AuthService {
 	jwtManager := utils.NewJWTManager(jwtSecret, accessTokenDuration, refreshTokenDuration)
 	validator := utils.NewValidator()
+	return &authService{
+		userRepo:           userRepo,
+		sessionRepo:        sessionRepo,
+		tokenBlacklistRepo: tokenBlacklistRepo,
+		jwtManager:         jwtManager,
+		validator:          validator,
+		logger:             logger,
+	}
+}
 
+// Function: NewAuthServiceWithManager
+//
+// Description: 使用已经构造好的 *JWTManager 实例（便于测试动态修改 token 生命周期）。
+//
+// Parameters:
+//
+//	userRepo(UserRepository): 用户仓库
+//	sessionRepo(SessionRepository): 会话仓库
+//	tokenBlacklistRepo(TokenBlacklistRepository): 黑名单仓库
+//	jwtManager(*utils.JWTManager): 预先创建的 JWT 管理器
+//	logger(interfaces.Logger): 日志组件
+//
+// Returns:
+//
+//	svc(serviceInterfaces.AuthService): 认证服务实例
+func NewAuthServiceWithManager(
+	userRepo repoInterfaces.UserRepository,
+	sessionRepo repoInterfaces.SessionRepository,
+	tokenBlacklistRepo repoInterfaces.TokenBlacklistRepository,
+	jwtManager *utils.JWTManager,
+	logger interfaces.Logger,
+) serviceInterfaces.AuthService {
+	validator := utils.NewValidator()
 	return &authService{
 		userRepo:           userRepo,
 		sessionRepo:        sessionRepo,
@@ -169,6 +218,7 @@ func (s *authService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    expiresAt,
+		ExpiresIn:    int64(time.Until(expiresAt).Seconds()),
 		TokenType:    "Bearer",
 		User:         *userInfo,
 	}, nil
@@ -249,7 +299,7 @@ func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Au
 		return nil, errors.Wrap(err, "failed to generate refresh token")
 	}
 
-	// 6. 创建新的会话记录
+	// 6. 创建新的会话记录（同步执行，保证后续依赖的一致性）
 	session := &models.Session{
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
@@ -290,9 +340,29 @@ func (s *authService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Au
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresAt:    expiresAt,
+		ExpiresIn:    int64(time.Until(expiresAt).Seconds()),
 		TokenType:    "Bearer",
 		User:         *userInfo,
 	}, nil
+}
+
+// SignIn 语义别名：调用 Login
+//
+// Function: SignIn
+//
+// Description: 语义别名封装，直接复用 Login 实现，保持未来扩展差异化的灵活性。
+//
+// Parameters:
+//
+//	ctx(context.Context): 上下文
+//	req(*dto.LoginRequest): 登录请求
+//
+// Returns:
+//
+//	resp(*dto.AuthResponse): 登录响应
+//	err(error): 错误
+func (s *authService) SignIn(ctx context.Context, req *dto.LoginRequest) (*dto.AuthResponse, error) {
+	return s.Login(ctx, req)
 }
 
 // RefreshToken 刷新Token
@@ -350,13 +420,13 @@ func (s *authService) RefreshToken(ctx context.Context, req *dto.RefreshTokenReq
 		return nil, errors.Wrap(err, "failed to generate refresh token")
 	}
 
-	// 7. 更新会话
-	session.RefreshToken = newRefreshToken
-	session.AccessToken = accessToken
-	session.ExpiresAt = expiresAt.Add(24 * time.Hour)
-
-	if err := s.sessionRepo.Update(ctx, session); err != nil {
-		return nil, errors.Wrap(err, "failed to update session")
+	// 7. CAS 原子更新会话（避免并发多次刷新同时成功）
+	ok, err := s.sessionRepo.RotateTokensCAS(ctx, req.RefreshToken, newRefreshToken, accessToken, expiresAt.Unix())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to rotate tokens CAS")
+	}
+	if !ok { // 说明并发中已被其他刷新请求更新或状态失效
+		return nil, errors.New("invalid refresh token")
 	}
 
 	s.logger.Info("token refreshed successfully",

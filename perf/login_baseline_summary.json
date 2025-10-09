@@ -1,0 +1,175 @@
+{
+  "single_concurrency_8": {
+    "best_p95_ms": 260.328,
+    "concurrency": 8,
+    "duration": "15s",
+    "median_p50_ms": 230.312,
+    "median_p95_ms": 285.14,
+    "mode": "single",
+    "runs": [
+      {
+        "errors": 0,
+        "index": 0,
+        "p50_ms": 230.312,
+        "p95_ms": 285.14,
+        "rps": 34.333333333333336,
+        "success": 515,
+        "total": 515
+      },
+      {
+        "errors": 0,
+        "index": 1,
+        "p50_ms": 248.003,
+        "p95_ms": 305.686,
+        "rps": 31.2,
+        "success": 468,
+        "total": 468
+      },
+      {
+        "errors": 0,
+        "index": 2,
+        "p50_ms": 222.585,
+        "p95_ms": 260.328,
+        "rps": 35.733333333333334,
+        "success": 536,
+        "total": 536
+      },
+      {
+        "errors": 0,
+        "index": 3,
+        "p50_ms": 221.867,
+        "p95_ms": 263.724,
+        "rps": 35.46666666666667,
+        "success": 532,
+        "total": 532
+      },
+      {
+        "errors": 0,
+        "index": 4,
+        "p50_ms": 234.311,
+        "p95_ms": 300.539,
+        "rps": 33.6,
+        "success": 504,
+        "total": 504
+      }
+    ],
+    "target": "http://localhost:8080/api/auth/login",
+    "timestamp": "2025-10-09T10:40:15+08:00",
+    "worst_p95_ms": 305.686
+  },
+  "stair": {
+    "mode": "stair",
+    "per_concurrency": [
+      {
+        "best_p95_ms": 237.576,
+        "concurrency": 4,
+        "median_p50_ms": 208.146,
+        "median_p95_ms": 270.89,
+        "runs": [
+          {
+            "errors": 0,
+            "index": 0,
+            "p50_ms": 248.552,
+            "p95_ms": 326.429,
+            "rps": 16.2,
+            "success": 81,
+            "total": 81
+          },
+          {
+            "errors": 0,
+            "index": 1,
+            "p50_ms": 195.719,
+            "p95_ms": 237.576,
+            "rps": 20.2,
+            "success": 101,
+            "total": 101
+          },
+          {
+            "errors": 0,
+            "index": 2,
+            "p50_ms": 208.146,
+            "p95_ms": 270.89,
+            "rps": 19,
+            "success": 95,
+            "total": 95
+          }
+        ],
+        "worst_p95_ms": 326.429
+      },
+      {
+        "best_p95_ms": 280.828,
+        "concurrency": 8,
+        "median_p50_ms": 242.17,
+        "median_p95_ms": 283.911,
+        "runs": [
+          {
+            "errors": 0,
+            "index": 0,
+            "p50_ms": 227.358,
+            "p95_ms": 283.911,
+            "rps": 35.2,
+            "success": 176,
+            "total": 176
+          },
+          {
+            "errors": 0,
+            "index": 1,
+            "p50_ms": 242.17,
+            "p95_ms": 280.828,
+            "rps": 33.6,
+            "success": 168,
+            "total": 168
+          },
+          {
+            "errors": 0,
+            "index": 2,
+            "p50_ms": 251.181,
+            "p95_ms": 640.735,
+            "rps": 29.4,
+            "success": 147,
+            "total": 147
+          }
+        ],
+        "worst_p95_ms": 640.735
+      },
+      {
+        "best_p95_ms": 4595.462,
+        "concurrency": 16,
+        "median_p50_ms": 2745.152,
+        "median_p95_ms": 4689.389,
+        "runs": [
+          {
+            "errors": 8,
+            "index": 0,
+            "p50_ms": 2792.183,
+            "p95_ms": 4595.462,
+            "rps": 6,
+            "success": 22,
+            "total": 30
+          },
+          {
+            "errors": 5,
+            "index": 1,
+            "p50_ms": 2711.443,
+            "p95_ms": 4689.389,
+            "rps": 6.2,
+            "success": 26,
+            "total": 31
+          },
+          {
+            "errors": 17,
+            "index": 2,
+            "p50_ms": 2745.152,
+            "p95_ms": 4987.5,
+            "rps": 6.4,
+            "success": 15,
+            "total": 32
+          }
+        ],
+        "worst_p95_ms": 4987.5
+      }
+    ],
+    "target": "http://localhost:8080/api/auth/login",
+    "timestamp": "2025-10-09T10:40:25+08:00"
+  }
+}

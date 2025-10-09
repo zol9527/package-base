@@ -6,6 +6,18 @@ import (
 	"package-base/internal/options"
 )
 
+// Function: SessionRepository
+//
+// Description: 会话领域的仓储接口，负责会话创建、查询、更新与清理，支持并发安全的令牌轮换。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // SessionRepository 会话存储接口
 type SessionRepository interface {
 	// Create 创建会话
@@ -64,4 +76,7 @@ type SessionRepository interface {
 
 	// FindSessionsWithPagination 根据选项分页查询会话
 	FindSessionsWithPagination(ctx context.Context, page, pageSize int, opts ...options.QuerySessionOption) ([]*models.Session, int64, error)
+
+	// RotateTokensCAS 基于旧 refresh_token 条件原子更新为新的一对 token，返回是否成功（并发安全）
+	RotateTokensCAS(ctx context.Context, oldRefreshToken, newRefreshToken, newAccessToken string, newExpiresAt int64) (bool, error)
 }

@@ -152,6 +152,11 @@ func (r *userRepository) GetByUsernameOrEmail(ctx context.Context, usernameOrEma
 	return user, nil
 }
 
+// FindByUsernameOrEmail 语义别名 -> GetByUsernameOrEmail
+func (r *userRepository) FindByUsernameOrEmail(ctx context.Context, usernameOrEmail string) (*models.User, error) {
+	return r.GetByUsernameOrEmail(ctx, usernameOrEmail)
+}
+
 // Update 更新用户信息
 func (r *userRepository) Update(ctx context.Context, user *models.User) error {
 	db := r.getDB()
@@ -209,6 +214,11 @@ func (r *userRepository) UpdateLoginInfo(ctx context.Context, userID string) err
 	}
 
 	return nil
+}
+
+// UpdateLoginMeta 语义别名 -> UpdateLoginInfo
+func (r *userRepository) UpdateLoginMeta(ctx context.Context, userID string) error {
+	return r.UpdateLoginInfo(ctx, userID)
 }
 
 // ExistsByUsername 检查用户名是否存在

@@ -7,6 +7,18 @@ import (
 	"package-base/internal/options"
 )
 
+// Function: UserService
+//
+// Description: 用户服务接口，聚合用户数据访问与业务转换逻辑，对外暴露领域操作。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // UserService 用户服务接口
 type UserService interface {
 	// GetProfile 获取用户资料

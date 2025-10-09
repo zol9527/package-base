@@ -34,21 +34,15 @@ type UserListResponse struct {
 // ============================================================================
 
 // Success 成功响应
+// Success 成功响应 (统一业务成功码=0)
 func Success(data interface{}) *APIResponse {
-	return &APIResponse{
-		Code:    200,
-		Message: "success",
-		Data:    data,
-	}
+	return &APIResponse{Code: 0, Message: "success", Data: data}
 }
 
 // SuccessWithMessage 成功响应（带自定义消息）
+// SuccessWithMessage 成功响应（自定义消息, 业务码=0）
 func SuccessWithMessage(message string, data interface{}) *APIResponse {
-	return &APIResponse{
-		Code:    200,
-		Message: message,
-		Data:    data,
-	}
+	return &APIResponse{Code: 0, Message: message, Data: data}
 }
 
 // Error 错误响应

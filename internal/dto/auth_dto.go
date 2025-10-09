@@ -47,6 +47,7 @@ type AuthResponse struct {
 	AccessToken  string    `json:"access_token"`
 	RefreshToken string    `json:"refresh_token"`
 	ExpiresAt    time.Time `json:"expires_at"`
+	ExpiresIn    int64     `json:"expires_in"` // 访问 token 剩余秒数，便于前端调度刷新
 	TokenType    string    `json:"token_type"`
 	User         UserInfo  `json:"user"`
 }

@@ -46,53 +46,29 @@ func NewAuthHandler(
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	var req dto.RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
-		h.logger.Warn("failed to parse register request",
-			interfaces.ErrorField(err),
-			interfaces.String("request_id", middleware.GetRequestID(c)),
-		)
-		return c.Status(fiber.StatusBadRequest).JSON(dto.Error(400, "invalid request body"))
+		return utils.Error(c, fiber.StatusBadRequest, "AUTH_INVALID_REQUEST", "invalid request body", nil)
 	}
-
-	// 验证请求参数
 	if err := h.validator.ValidateStruct(&req); err != nil {
-		h.logger.Warn("register validation failed",
-			interfaces.ErrorField(err),
-			interfaces.String("username", req.Username),
-		)
-		return c.Status(fiber.StatusBadRequest).JSON(dto.Error(400, err.Error()))
+		return utils.Error(c, fiber.StatusBadRequest, "AUTH_VALIDATION_FAILED", err.Error(), nil)
 	}
-
-	// 调用服务层进行注册
 	response, err := h.authService.Register(c.Context(), &req)
 	if err != nil {
-		h.logger.Error("registration failed",
-			interfaces.ErrorField(err),
-			interfaces.String("username", req.Username),
-		)
-
-		// 根据错误类型返回不同状态码
 		statusCode := fiber.StatusInternalServerError
-		message := "registration failed"
-
-		errMsg := err.Error()
-		switch {
-		case errMsg == "username already exists" || errMsg == "email already exists":
+		code := "AUTH_REGISTER_FAILED"
+		switch err.Error() {
+		case "username already exists":
 			statusCode = fiber.StatusConflict
-			message = errMsg
-		case errMsg == "validation failed":
+			code = "AUTH_USERNAME_EXISTS"
+		case "email already exists":
+			statusCode = fiber.StatusConflict
+			code = "AUTH_EMAIL_EXISTS"
+		case "validation failed":
 			statusCode = fiber.StatusBadRequest
-			message = errMsg
+			code = "AUTH_VALIDATION_FAILED"
 		}
-
-		return c.Status(statusCode).JSON(dto.Error(statusCode, message))
+		return utils.Error(c, statusCode, code, err.Error(), nil)
 	}
-
-	h.logger.Info("user registered successfully",
-		interfaces.String("user_id", response.User.ID),
-		interfaces.String("username", response.User.Username),
-	)
-
-	return c.JSON(dto.SuccessWithMessage("registration successful", response))
+	return utils.Success(c, response, "registration successful")
 }
 
 // Login 用户登录
@@ -110,54 +86,29 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var req dto.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		h.logger.Warn("failed to parse login request",
-			interfaces.ErrorField(err),
-			interfaces.String("request_id", middleware.GetRequestID(c)),
-		)
-		return c.Status(fiber.StatusBadRequest).JSON(dto.Error(400, "invalid request body"))
+		return utils.Error(c, fiber.StatusBadRequest, "AUTH_INVALID_REQUEST", "invalid request body", nil)
 	}
-
-	// 验证请求参数
 	if err := h.validator.ValidateStruct(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(dto.Error(400, err.Error()))
+		return utils.Error(c, fiber.StatusBadRequest, "AUTH_VALIDATION_FAILED", err.Error(), nil)
 	}
-
-	// 调用服务层进行登录
 	response, err := h.authService.Login(c.Context(), &req)
 	if err != nil {
-		h.logger.Warn("login failed",
-			interfaces.ErrorField(err),
-			interfaces.String("username", req.Username),
-			interfaces.String("ip", c.IP()),
-		)
-
-		// 根据错误类型返回不同状态码
 		statusCode := fiber.StatusInternalServerError
-		message := "login failed"
-
-		errMsg := err.Error()
-		switch {
-		case errMsg == "invalid credentials":
+		code := "AUTH_LOGIN_FAILED"
+		switch err.Error() {
+		case "invalid credentials":
 			statusCode = fiber.StatusUnauthorized
-			message = "invalid username or password"
-		case errMsg == "account is not active":
+			code = "AUTH_INVALID_CREDENTIALS"
+		case "account is not active":
 			statusCode = fiber.StatusUnauthorized
-			message = "account is not active"
-		case errMsg == "validation failed":
+			code = "AUTH_ACCOUNT_INACTIVE"
+		case "validation failed":
 			statusCode = fiber.StatusBadRequest
-			message = errMsg
+			code = "AUTH_VALIDATION_FAILED"
 		}
-
-		return c.Status(statusCode).JSON(dto.Error(statusCode, message))
+		return utils.Error(c, statusCode, code, "login failed", nil)
 	}
-
-	h.logger.Info("user logged in successfully",
-		interfaces.String("user_id", response.User.ID),
-		interfaces.String("username", response.User.Username),
-		interfaces.String("ip", c.IP()),
-	)
-
-	return c.JSON(dto.SuccessWithMessage("login successful", response))
+	return utils.Success(c, response, "login successful")
 }
 
 // RefreshToken 刷新Token

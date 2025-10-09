@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: Auth API
+  version: 0.1.0
+paths:
+  /api/auth/login:
+    post:
+      summary: 用户名/邮箱 + 密码登录
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier:
+                  type: string
+                  description: 用户名或邮箱
+                password:
+                  type: string
+                  description: 明文密码（HTTPS 传输）
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: ok
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        description: JWT Access Token
+                      expires_in:
+                        type: integer
+                        description: Token 剩余秒数
+                  trace_id:
+                    type: string
+        '401':
+          description: 认证失败
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 1001
+                  message:
+                    type: string
+                    example: authentication failed
+                  data:
+                    nullable: true
+                  trace_id:
+                    type: string
+        '429':
+          description: 节流（未来启用）
+        '500':
+          description: 服务端错误

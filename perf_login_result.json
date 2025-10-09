@@ -1,0 +1,61 @@
+{
+  "mode": "stair",
+  "target": "http://localhost:8080/api/auth/login",
+  "timestamp": "2025-10-09T10:36:03+08:00",
+  "per_concurrency": [
+    {
+      "concurrency": 4,
+      "runs": [
+        {
+          "index": 0,
+          "total": 52,
+          "success": 52,
+          "errors": 0,
+          "rps": 17.333333333333332,
+          "p50_ms": 227.494,
+          "p95_ms": 275.917
+        },
+        {
+          "index": 1,
+          "total": 56,
+          "success": 56,
+          "errors": 0,
+          "rps": 18.666666666666668,
+          "p50_ms": 224.5,
+          "p95_ms": 266.065
+        }
+      ],
+      "median_p95_ms": 270.991,
+      "median_p50_ms": 225.997,
+      "best_p95_ms": 266.065,
+      "worst_p95_ms": 275.917
+    },
+    {
+      "concurrency": 8,
+      "runs": [
+        {
+          "index": 0,
+          "total": 101,
+          "success": 101,
+          "errors": 0,
+          "rps": 33.666666666666664,
+          "p50_ms": 242.722,
+          "p95_ms": 288.133
+        },
+        {
+          "index": 1,
+          "total": 98,
+          "success": 98,
+          "errors": 0,
+          "rps": 32.666666666666664,
+          "p50_ms": 249.866,
+          "p95_ms": 317.607
+        }
+      ],
+      "median_p95_ms": 302.87,
+      "median_p50_ms": 246.294,
+      "best_p95_ms": 288.133,
+      "worst_p95_ms": 317.607
+    }
+  ]
+}

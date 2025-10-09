@@ -148,6 +148,35 @@ make clean-all        # 清理所有文件
 # 工具
 make install-tools    # 安装开发工具
 make health           # 健康检查
+
+# 性能工具
+make perf-login       # 运行登录基线（15s x5 并发8），输出 perf/login_single_baseline.json
+make perf-login-stair # 阶梯并发（4/8/16; 5s x3），输出 perf/login_stair_baseline.json
+make perf-gate        # 检查性能阈值（默认读取 perf/login_baseline_summary.json，阈值 350ms）
+```
+
+### 🧱 分层检查（Layering Check）
+
+项目内置分层静态检查与基础 vet 检查，确保层间依赖边界清晰：
+
+- 规则：
+	- handlers 层禁止直接 import `internal/storages`
+	- services 层禁止直接 import `internal/storages`
+
+运行方式：
+
+```bash
+make layer-check
+```
+
+示例输出：
+
+```
+[layer-check] 执行分层规则校验...
+[layer-check][OK] handlers 未直接引用 storages 实现
+[layer-check][OK] services 未直接引用 storages 实现
+[layer-check] ✅ 通过
+🔎 运行 go vet...
 ```
 
 ## ⚙️ 配置说明
@@ -207,6 +236,29 @@ JWT_SECRET=your-super-secret-jwt-key
 - **结构化日志**: 使用 Zap 进行高性能日志记录
 - **健康检查**: `/health` 端点监控系统状态
 - **性能监控**: 内置请求ID和响应时间记录
+
+### 性能基线与阈值守护
+
+- 运行单一并发基线：
+	- make perf-login
+	- 生成 perf/login_single_baseline.json，包含多次运行统计（median/best/worst 等）。
+
+- 运行阶梯并发基线：
+	- make perf-login-stair
+	- 生成 perf/login_stair_baseline.json，按并发分组统计。
+
+- 生成汇总摘要（脚本已在前序步骤生成如 perf/login_baseline_summary.json 示例）。
+
+- 性能阈值守护：
+	- make perf-gate               # 默认读取 perf/login_baseline_summary.json
+	- FILE=perf/login_single_baseline.json make perf-gate  # 指定文件
+	- MAX=320 make perf-gate       # 调整 p95 阈值（毫秒）
+	- MODE=single make perf-gate   # 指定解析模式，支持 auto|single|summary|stair
+
+### 性能相关环境变量
+
+- BCRYPT_COST：动态控制 bcrypt 计算成本（默认 10，基线建议 8 以缩短响应时间）。
+- PPROF=1：在 :6060 开启 pprof（仅开发/压测时使用）。
 
 ## 🔄 开发流程
 

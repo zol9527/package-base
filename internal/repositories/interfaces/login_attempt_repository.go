@@ -6,6 +6,18 @@ import (
 	"package-base/internal/options"
 )
 
+// Function: LoginAttemptRepository
+//
+// Description: 登录尝试记录的仓储接口，提供审计统计与风控所需的查询与聚合能力。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // LoginAttemptRepository 登录尝试存储接口
 type LoginAttemptRepository interface {
 	// Create 创建登录尝试记录

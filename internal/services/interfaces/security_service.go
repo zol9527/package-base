@@ -8,6 +8,18 @@ import (
 	"package-base/internal/dto"
 )
 
+// Function: SecurityService
+//
+// Description: 安全服务接口，提供登录限制、IP 管控、风险分析与配置管理等能力。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // SecurityService 安全服务接口
 type SecurityService interface {
 	// 登录限制相关方法
@@ -36,6 +48,18 @@ type SecurityService interface {
 	UpdateSecurityConfig(ctx context.Context, req *dto.UpdateSecurityConfigRequest) error
 }
 
+// Function: SecurityServiceOptions
+//
+// Description: 安全服务行为的可配置选项集合，控制限制策略与清理策略。
+//
+// Parameters:
+//
+//	无
+//
+// Returns:
+//
+//	无
+//
 // SecurityServiceOptions 安全服务配置选项
 type SecurityServiceOptions struct {
 	// 登录限制配置
