@@ -8,10 +8,13 @@ import (
 	"package-base/internal/core/interfaces"
 	"package-base/internal/core/storages"
 	"package-base/internal/core/utils"
+	rbacModel "package-base/internal/models/rbac"
 	"package-base/internal/repositories"
 	repoInterfaces "package-base/internal/repositories/interfaces"
+	rbacRepos "package-base/internal/repositories/rbac"
 	"package-base/internal/services"
 	serviceInterfaces "package-base/internal/services/interfaces"
+	rbacService "package-base/internal/services/rbac"
 
 	"github.com/pkg/errors"
 )
@@ -37,10 +40,20 @@ type Container struct {
 	sessionRepo        repoInterfaces.SessionRepository
 	tokenBlacklistRepo repoInterfaces.TokenBlacklistRepository
 	loginAttemptRepo   repoInterfaces.LoginAttemptRepository
+	// RBAC 存储
+	roleRepo    repoInterfaces.RoleRepository
+	permRepo    repoInterfaces.PermissionRepository
+	bindingRepo repoInterfaces.BindingRepository
+	auditRepo   repoInterfaces.AuditRepository
 
 	// 服务层
-	authService     serviceInterfaces.AuthService
-	securityService serviceInterfaces.SecurityService
+	authService      serviceInterfaces.AuthService
+	securityService  serviceInterfaces.SecurityService
+	roleService      serviceInterfaces.RoleService
+	bindingService   serviceInterfaces.BindingService
+	permQueryService serviceInterfaces.PermissionsQueryService
+	// RBAC 服务
+	authorizationService serviceInterfaces.AuthorizationService
 
 	// 处理器/中间件层：外部身份服务依赖已移除，按需再扩展
 	authMiddleware interface{} // 占位，后续可引入新的认证中间件
@@ -163,6 +176,21 @@ func (c *Container) initRepositories() error {
 	// 初始化登录尝试仓库
 	c.loginAttemptRepo = repositories.NewLoginAttemptRepository(c.mysqlStorage, c.logger)
 
+	// 初始化 RBAC 仓储（骨架）
+	c.roleRepo = rbacRepos.NewRoleRepository(c.mysqlStorage, c.logger)
+	c.permRepo = rbacRepos.NewPermissionRepository(c.mysqlStorage, c.logger)
+	c.bindingRepo = rbacRepos.NewBindingRepository(c.mysqlStorage, c.logger)
+	c.auditRepo = rbacRepos.NewAuditRepository(c.mysqlStorage, c.logger)
+
+	// 迁移 RBAC 相关表（临时：AutoMigrate）
+	_ = c.mysqlStorage.Migrate(context.Background(),
+		&rbacModel.Role{},
+		&rbacModel.Permission{},
+		&rbacModel.RolePermission{},
+		&rbacModel.UserRoleBinding{},
+		&rbacModel.AccessDecision{},
+	)
+
 	return nil
 }
 
@@ -184,6 +212,25 @@ func (c *Container) initServices() error {
 		c.redisStorage,
 		nil, // 使用默认选项
 	)
+
+	// 初始化 RBAC 授权服务（骨架）
+	c.authorizationService = rbacService.NewServiceWithRepos(
+		c.logger,
+		c.roleRepo,
+		c.permRepo,
+		c.bindingRepo,
+		c.auditRepo,
+		c.userRepo,
+	)
+
+	// 初始化角色管理服务
+	c.roleService = rbacService.NewRoleService(c.logger, c.roleRepo)
+
+	// 初始化绑定服务
+	c.bindingService = rbacService.NewBindingService(c.logger, c.bindingRepo)
+
+	// 初始化权限查询服务
+	c.permQueryService = rbacService.NewPermissionsQueryService(c.logger, c.bindingRepo, c.permRepo)
 
 	return nil
 }
@@ -280,6 +327,36 @@ func (c *Container) GetSecurityService() serviceInterfaces.SecurityService {
 // GetAuthService 获取认证服务
 func (c *Container) GetAuthService() serviceInterfaces.AuthService {
 	return c.authService
+}
+
+// GetBindingService 获取绑定服务
+func (c *Container) GetBindingService() serviceInterfaces.BindingService {
+	return c.bindingService
+}
+
+// GetRoleService 获取角色服务
+func (c *Container) GetRoleService() serviceInterfaces.RoleService {
+	return c.roleService
+}
+
+// GetAuthorizationService 获取 RBAC 授权服务
+func (c *Container) GetAuthorizationService() serviceInterfaces.AuthorizationService {
+	return c.authorizationService
+}
+
+// GetPermissionsQueryService 获取权限查询服务
+func (c *Container) GetPermissionsQueryService() serviceInterfaces.PermissionsQueryService {
+	return c.permQueryService
+}
+
+// GetPermissionRepository 获取权限仓储
+func (c *Container) GetPermissionRepository() repoInterfaces.PermissionRepository {
+	return c.permRepo
+}
+
+// GetAuditRepository 获取审计仓储
+func (c *Container) GetAuditRepository() repoInterfaces.AuditRepository {
+	return c.auditRepo
 }
 
 // 处理器/中间件 Getter：当前无特定暴露方法

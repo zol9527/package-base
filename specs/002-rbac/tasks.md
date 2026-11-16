@@ -5,40 +5,40 @@ Source Docs: spec.md, plan.md, data-model.md, contracts/openapi.yaml, research.m
 
 ## Phase 1 — Setup
 
-- T001 [Setup] 建立 RBAC 目录与骨架 [P]
+- T001 [Setup] 建立 RBAC 目录与骨架 [P] [X]
   - 路径：internal/{middleware,services,repositories,models}/rbac, internal/core/{interfaces,utils}
   - 产出：占位文件与注释、分层依赖校验脚本通过
-- T002 [Setup] 统一错误码与响应约定扩展 [P]
+- T002 [Setup] 统一错误码与响应约定扩展 [P] [X]
   - 路径：internal/core/common（或现有错误码定义处）
   - 产出：新增 401/403 错误码与消息枚举；响应结构对齐宪章
-- T003 [Setup] 数据迁移脚手架与占位（明确策略） [P]
+- T003 [Setup] 数据迁移脚手架与占位（明确策略） [P] [X]
   - 路径：internal/models / migrations/
   - 产出：选择并约定迁移方式（AutoMigrate 或 手写 migrations）；创建 Role, Permission, RolePermission, UserRoleBinding, AccessDecision 的迁移占位
-- T003a [Setup Tests] 基础测试脚手架与工具 [P]
+- T003a [Setup Tests] 基础测试脚手架与工具 [P] [X]
   - 路径：tests/{unit,integration,contract}/helpers
   - 产出：mock、测试数据加载器、统一断言工具；为后续失败态测试提供基座
 
 ## Phase 2 — Foundational (All stories prerequisites)
 
-- T004 [Foundation] 定义领域接口（RBACService, Repository 接口）
+- T004 [Foundation] 定义领域接口（RBACService, Repository 接口） [X]
   - 路径：internal/core/interfaces/rbac.go
   - 依赖：T001
-- T005 [Foundation] 定义模型与验证规则（数据模型对齐）
+- T005 [Foundation] 定义模型与验证规则（数据模型对齐） [X]
   - 路径：internal/models/rbac/*.go
   - 依赖：T003
-- T006 [Foundation] 实现仓储接口骨架（增删改查+查询）
+- T006 [Foundation] 实现仓储接口骨架（增删改查+查询） [X]
   - 路径：internal/repositories/rbac/*.go
   - 依赖：T004, T005
-- T007 [Foundation] 实现服务层骨架（权限聚合与判定框架）
+- T007 [Foundation] 实现服务层骨架（权限聚合与判定框架） [X]
   - 路径：internal/services/rbac/*.go
   - 依赖：T006
-- T008 [Foundation] 鉴权中间件骨架（注入服务、读取用户身份、拦截403/记录决策）
+- T008 [Foundation] 鉴权中间件骨架（注入服务、读取用户身份、拦截403/记录决策） [X]
   - 路径：internal/middleware/rbac.go
   - 依赖：T007
 - T009 [Foundation] 审计记录基础设施（日志写入通道/函数） [P]
   - 路径：internal/services/rbac/audit.go, internal/repositories/rbac/audit_repository.go
   - 依赖：T006
-- T009b [Foundation] 账户状态校验（禁用/锁定优先）集成
+- T009b [Foundation] 账户状态校验（禁用/锁定优先）集成 [X]
   - 路径：internal/services/rbac/authorize.go, internal/middleware/rbac.go
   - 依赖：T007
 - T009c [Foundation] 内置角色（Admin/Manager/Viewer）种子数据与回滚策略 [P]
@@ -50,22 +50,22 @@ Source Docs: spec.md, plan.md, data-model.md, contracts/openapi.yaml, research.m
 - Story 目标：分配角色后立即生效；未授权返回403；决策记录。
 - 独立验收：用 Viewer 读取成功、写入拒绝；切换 Manager 后写入成功；日志可见。
 
-- T009a [US1 Tests] 授权失败态测试先行（默认拒绝/403、账户禁用/锁定）
+- T009a [US1 Tests] 授权失败态测试先行（默认拒绝/403、账户禁用/锁定） [X]
   - 路径：tests/integration/authz_us1_*.go, tests/contract/rbac_us1_*.go
   - 依赖：T003a, T007, T008
-- T010 [US1] 创建角色 API（POST /rbac/roles）
+- T010 [US1] 创建角色 API（POST /rbac/roles） [X]
   - 路径：internal/handlers/rbac/roles_handler.go
   - 依赖：T007, T006
-- T011 [US1] 更新/删除角色 API（PATCH/DELETE /rbac/roles/{id})
+- T011 [US1] 更新/删除角色 API（PATCH/DELETE /rbac/roles/{id}) [X]
   - 路径：internal/handlers/rbac/roles_handler.go
   - 依赖：T010
-- T012 [US1] 用户绑定角色 API（PUT /rbac/users/{userId}/roles）+ 绑定请求 DTO/校验（含可选 scope）
+- T012 [US1] 用户绑定角色 API（PUT /rbac/users/{userId}/roles）+ 绑定请求 DTO/校验（含可选 scope） [X]
   - 路径：internal/handlers/rbac/bindings_handler.go
   - 依赖：T010
-- T013 [US1] 授权中间件接入路由（对受保护路径生效）
+- T013 [US1] 授权中间件接入路由（对受保护路径生效） [X]
   - 路径：internal/routes/routes.go
   - 依赖：T008
-- T014 [US1] 有效权限查询 API（GET /rbac/effective-permissions/{userId}) [P]
+- T014 [US1] 有效权限查询 API（GET /rbac/effective-permissions/{userId}) [P] [X]
   - 路径：internal/handlers/rbac/permissions_query_handler.go
   - 依赖：T007
 - T015 [US1] 决策日志写入（允许/拒绝）

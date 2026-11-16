@@ -3,7 +3,9 @@ package routes
 import (
 	"package-base/internal/container"
 	"package-base/internal/core/log"
+	"package-base/internal/dto"
 	"package-base/internal/handlers"
+	rbacHandlers "package-base/internal/handlers/rbac"
 	"package-base/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
@@ -128,6 +130,34 @@ func (r *Routes) setupAPIRoutes() {
 
 	authGroup.Post("/login", authHandler.Login)
 	authGroup.Post("/refresh", authHandler.RefreshToken)
+
+	// 受保护路由：先 JWT 鉴权，再 RBAC 判定
+	jwtMw := middleware.NewAuthMiddleware(r.container.GetConfig().JWT.Secret, log.L().Named("middleware.auth"))
+	rbacMw := middleware.RBAC(r.container.GetAuthorizationService(), log.L().Named("middleware.rbac"))
+
+	protected := api.Group("/protected", jwtMw.Authenticate(), rbacMw)
+	protected.Get("/ping", func(c *fiber.Ctx) error {
+		return c.JSON(dto.Success(fiber.Map{"message": "ok"}))
+	})
+
+	// RBAC 管理端点（后续可加 RBAC 自身保护策略）
+	rbacGroup := api.Group("/rbac")
+	rolesHandler := rbacHandlers.NewRolesHandler(r.container.GetRoleService(), log.L().Named("handler.rbac.roles"))
+	rbacGroup.Post("/roles", rolesHandler.CreateRole)
+	rbacGroup.Patch("/roles/:id", rolesHandler.UpdateRole)
+	rbacGroup.Delete("/roles/:id", rolesHandler.DeleteRole)
+
+	bindingsHandler := rbacHandlers.NewBindingsHandler(r.container.GetBindingService(), log.L().Named("handler.rbac.bindings"))
+	rbacGroup.Put("/users/:userId/roles", bindingsHandler.UpdateUserRoles)
+
+	permsMgrHandler := rbacHandlers.NewPermissionsHandler(r.container.GetPermissionRepository(), log.L().Named("handler.rbac.permissions"))
+	rbacGroup.Post("/permissions", permsMgrHandler.CreatePermission)
+
+	permsHandler := rbacHandlers.NewPermissionsQueryHandler(r.container.GetPermissionsQueryService(), log.L().Named("handler.rbac.perms"))
+	rbacGroup.Get("/effective-permissions/:userId", permsHandler.GetEffectivePermissions)
+
+	auditHandler := rbacHandlers.NewAuditHandler(r.container.GetAuditRepository(), log.L().Named("handler.rbac.audit"))
+	rbacGroup.Get("/audit", auditHandler.Query)
 }
 
 // Function: setupHealthRoutes

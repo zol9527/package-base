@@ -20,6 +20,29 @@ type PaginationResponse struct {
 	Pages    int         `json:"pages"`
 }
 
+// RoleCreateRequest 角色创建请求
+type RoleCreateRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Enabled     *bool  `json:"enabled,omitempty"`
+}
+
+// RoleResponse 角色响应数据
+type RoleResponse struct {
+	ID          uint   `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	BuiltIn     bool   `json:"built_in"`
+	Enabled     bool   `json:"enabled"`
+}
+
+// UserBindRolesRequest 用户绑定角色请求
+type UserBindRolesRequest struct {
+	RoleIDs       []uint  `json:"role_ids"`
+	Scope         *string `json:"scope,omitempty"`
+	ExplicitEmpty *bool   `json:"explicit_empty,omitempty"` // 为 true 且 role_ids 为空时，表示解除该 scope 下所有绑定
+}
+
 // UserListResponse 用户列表响应
 type UserListResponse struct {
 	Users    []UserInfo `json:"users"`

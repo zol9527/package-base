@@ -8,17 +8,17 @@ import "time"
 //
 // Parameters:
 //
-//    无
+//	无
 //
 // Returns:
 //
-//    无
- type Permission struct {
+//	无
+type Permission struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
-	Resource  string    `json:"resource" gorm:"not null;size:255"`
-	Action    string    `json:"action" gorm:"not null;size:32"`
-	Effect    string    `json:"effect" gorm:"not null;size:8"`
+	Resource  string    `json:"resource" gorm:"not null;size:255"` // 形如 domain:sub:id 或使用 * 通配
+	Action    string    `json:"action" gorm:"not null;size:32"`    // read|write|delete|manage
+	Effect    string    `json:"effect" gorm:"not null;size:8"`     // allow|deny（deny 优先）
 	Note      string    `json:"note" gorm:"size:255"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
- }
+}

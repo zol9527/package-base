@@ -11,7 +11,7 @@ import "time"
 //
 // Returns:
 //    无
- type AccessDecision struct {
+type AccessDecision struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	UserID    string    `json:"user_id" gorm:"not null;size:64;index"`
 	Resource  string    `json:"resource" gorm:"not null;size:255;index"`
@@ -21,4 +21,4 @@ import "time"
 	RequestID string    `json:"request_id" gorm:"size:64;index"`
 	Client    string    `json:"client_info" gorm:"size:255"`
 	CreatedAt time.Time `json:"created_at"`
- }
+}
