@@ -1,0 +1,65 @@
+openapi: 3.0.3
+info:
+  title: RBAC 管理与授权 API
+  version: 0.1.0
+servers:
+  - url: /api
+paths:
+  /rbac/roles:
+    get:
+      summary: 列出角色
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建角色
+      responses:
+        '201': { description: Created }
+  /rbac/roles/{roleId}:
+    patch:
+      summary: 更新角色
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除角色（内置不可删除）
+      responses:
+        '204': { description: No Content }
+  /rbac/permissions:
+    post:
+      summary: 创建权限（资源+动作+效果）
+      responses:
+        '201': { description: Created }
+  /rbac/roles/{roleId}/permissions:
+    put:
+      summary: 替换角色的权限集合
+      responses:
+        '200': { description: OK }
+  /rbac/roles/{roleId}/parents:
+    put:
+      summary: 设置父角色（继承）
+      responses:
+        '200': { description: OK }
+  /rbac/users/{userId}/roles:
+    put:
+      summary: 绑定用户的角色（可含作用域）
+      responses:
+        '200': { description: OK }
+  /rbac/authorize:
+    post:
+      summary: 对给定用户/资源/动作做授权判定
+      responses:
+        '200': { description: OK }
+  /rbac/effective-permissions/{userId}:
+    get:
+      summary: 查询用户有效权限
+      responses:
+        '200': { description: OK }
+  /rbac/audit:
+    get:
+      summary: 审计记录查询（过滤：用户/资源/动作/时间）
+      responses:
+        '200': { description: OK }
+  /rbac/audit/export:
+    get:
+      summary: 导出审计记录
+      responses:
+        '200': { description: OK }

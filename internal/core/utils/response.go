@@ -22,6 +22,7 @@ func Success(c *fiber.Ctx, data interface{}, message string) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"code":    0,
 		"message": message,
+		"msg":     message,
 		"data":    data,
 	})
 }
@@ -51,6 +52,7 @@ func Error(c *fiber.Ctx, http_status int, code string, message string, details i
 	return c.Status(http_status).JSON(fiber.Map{
 		"code":    code,
 		"message": message,
+		"msg":     message,
 		"details": details,
 	})
 }
